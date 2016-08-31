@@ -1,7 +1,7 @@
 # coding=UTF-8
 import math
 from math import sqrt
-from math import acos
+from math import acos, cos
 
 class Vertice(object):
     def __init__(self, x, y):
@@ -110,8 +110,8 @@ class Poligono(object):
         Q = self.vertices[:]
         quick_order_y(Q, 0, len(Q)-1)
         print_v(Q) 
-        while Q:
-            Q.pop()
+        classify(Q)
+        print_v(Q)
         return True
     #-----------------------------------------------#
     # Calcula a triangulacao de um poligono
@@ -125,7 +125,7 @@ class Poligono(object):
 
         # remove os dois primeiros vertices V
         return True
-    
+        
     #-----------------------------------------------#
     # Classifica os vertices em: start, split, merge,
     # regular ou end.
@@ -141,8 +141,8 @@ class Poligono(object):
 
             x1, y1 = p1.x - ref.x, p1.y - ref.y
             x2, y2 = p2.x - ref.x, p2.y - ref.y
-
-            print angle(x1, y1, x2, y2)
+            print x1, x2 
+            print "  ", ref, angle(p1.x, p1.y, p2.x, p2.y)
 
             if cross_sign(x1, y1, x2, y2):
                 ref.tipo = "inner"
@@ -183,7 +183,7 @@ def quick_order_y(v, esq, dir):
 def angle(x1, y1, x2, y2):
     dot = (x1 * x2) + (y1 * y2)
     denom = sqrt((x1 ** 2 + y1 ** 2) * (x2 ** 2 + y2 ** 2))
-    return acos(dot/denom)
+    return cos(dot/denom)
 
 def cross_sign(x1, y1, x2, y2):
     return x1 * y2 > x2 * y1
