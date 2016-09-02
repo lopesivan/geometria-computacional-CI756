@@ -1,13 +1,18 @@
 # coding=UTF-8
 import math
 from math import sqrt
-from math import acos, cos
+from math import acos, cos, degrees
 
-class Vertice(object):
+class Ponto(object):
     def __init__(self, x, y):
         self.x = x
         self.y = y
+
+        self.prox = None
+        self.ant = None
         self.tipo = None
+        self.theta = None
+
     def __str__(self):
         return "(%s,%s)" % (self.x,self.y)
 
@@ -94,11 +99,16 @@ class Poligono(object):
         self.triangulos = []
         self.segments = []
         self.vertices = vertices
-    
-        for i in xrange(len(vertices) - 1):
-            self.segments.append(Segmento(vertices[i], vertices[i+1]))
-        self.segments.append(Segmento(vertices[len(vertices)-1], vertices[0]))
-        
+
+        # forma o poligono na ordem em que foi dada na entrada
+        for i in xrange(0, len(vertices)):
+            self.vertices[i-1].prox = self.vertices[i]
+            self.vertices[i].ant = vertices[i-1]#Segmento(vertices[i-1], vertices[i])
+            #self.segments.append(Segmento(vertices[i], vertices[i+1]))
+        #self.vertices[len(vertices)-2].prox = self.vertices[len(vertices)-1].ant
+        # após formar o polígono, ordena os vértices com relação à coordenada y
+        quick_order_y(self.vertices, 0, len(vertices)-1)
+
     #-----------------------------------------------#
     # Decompoe o poligono em poligonos monotonicos
     # Entrada: poligono simples P 
@@ -113,6 +123,7 @@ class Poligono(object):
         classify(Q)
         print_v(Q)
         return True
+
     #-----------------------------------------------#
     # Calcula a triangulacao de um poligono
     # Entrada: self
@@ -133,21 +144,15 @@ class Poligono(object):
     # Saida: uma classificação dos vertices
     #-----------------------------------------------#    
     def classify(self):
-
+        subi = False
         for i in xrange(0,len(self.vertices)):
-            p1 = self.vertices[i]
-            ref = self.vertices[i - 1]
-            p2 = self.vertices[i - 2]
+            p1 = self.vertices[i] #self.segments[i].v2 #  
+            ref = self.vertices[i - 1] #self.segments[i].v1 # 
+            p2 = self.vertices[i - 2] #self.segments[i-1].v1 # 
 
             x1, y1 = p1.x - ref.x, p1.y - ref.y
             x2, y2 = p2.x - ref.x, p2.y - ref.y
-            print x1, x2 
-            print "  ", ref, angle(p1.x, p1.y, p2.x, p2.y)
-
-            if cross_sign(x1, y1, x2, y2):
-                ref.tipo = "inner"
-            else:
-                ref.tipo = "outer"
+            ref.theta = theta(x1, y1, x2, y2)
             
 
         return True
@@ -180,18 +185,40 @@ def quick_order_y(v, esq, dir):
 # Entrada: 
 # Saida: 
 #-----------------------------------------------#    
-def angle(x1, y1, x2, y2):
+def theta(x1, y1, x2, y2): # adaptar para receber um segmento
     dot = (x1 * x2) + (y1 * y2)
     denom = sqrt((x1 ** 2 + y1 ** 2) * (x2 ** 2 + y2 ** 2))
-    return cos(dot/denom)
+    if x1 * y2 < x2 * y1:
+        angulo = math.degrees(acos(dot/denom)) 
+    else:
+        angulo = 360.0 - math.degrees(acos(dot/denom))
+    return int(angulo)
+
+def teste():
+    return True
+
+def sweep(poligono):
+    Q = poligono.vertices[:]
+    sweep_segment = Segment(Ponto(-1,Q[-1].y), Ponto(10, Q[-1].y))
+    while Q:
+        event = []
+        event.append(Q.pop())
+        while Q and Q[-1] == event[0].y:
+            event.append(Q.pop())
+        semi_reta_esq.intersect_any(poligono)
+        semi_reta_dir.intersect_any(poligono)
+        print "faz alguma coisa"
+
 
 def cross_sign(x1, y1, x2, y2):
-    return x1 * y2 > x2 * y1
+    return x1 * y2 < x2 * y1
 
-def print_v(vertices):
-    print "os vertices:"
-    for v in vertices:
-        print v, " ", v.tipo
+def print_v(p):
+    print "os ", len(p.vertices)," vertices:"
+    for v in p.vertices:
+        print "     ", v, " tipo: ", v.tipo, " 0: ", v.theta
+        print v.ant, " --- ", v.prox
+        print ""
 
 def print_s(segments):
     print "os segmentos:"
