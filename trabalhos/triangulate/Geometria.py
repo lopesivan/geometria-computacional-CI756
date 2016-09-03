@@ -144,11 +144,11 @@ class Poligono(object):
     # Saida: uma classificação dos vertices
     #-----------------------------------------------#    
     def classify(self):
-        subi = False
-        for i in xrange(0,len(self.vertices)):
-            p1 = self.vertices[i] #self.segments[i].v2 #  
-            ref = self.vertices[i - 1] #self.segments[i].v1 # 
-            p2 = self.vertices[i - 2] #self.segments[i-1].v1 # 
+        #for i in xrange(0,len(self.vertices)):
+        for v in self.vertices:
+            p1 = v.ant #self.vertices[i] #self.segments[i].v2 #  
+            ref = v #self.vertices[i - 1] #self.segments[i].v1 # 
+            p2 = v.prox #self.vertices[i - 2] #self.segments[i-1].v1 # 
 
             x1, y1 = p1.x - ref.x, p1.y - ref.y
             x2, y2 = p2.x - ref.x, p2.y - ref.y
@@ -188,14 +188,37 @@ def quick_order_y(v, esq, dir):
 def theta(x1, y1, x2, y2): # adaptar para receber um segmento
     dot = (x1 * x2) + (y1 * y2)
     denom = sqrt((x1 ** 2 + y1 ** 2) * (x2 ** 2 + y2 ** 2))
-    if x1 * y2 < x2 * y1:
+    if x1 * y2 > x2 * y1:
         angulo = math.degrees(acos(dot/denom)) 
     else:
         angulo = 360.0 - math.degrees(acos(dot/denom))
     return int(angulo)
 
-def teste():
-    return True
+def classifica(v):
+    if (abaixo(v, v.ant) and acima(v, v.prox)) or (abaixo(v, v.prox) and acima(v, v.ant)):
+        v.tipo = 'regular'
+    if abaixo(v, v.ant) and abaixo(v, v.prox) and v.theta < 180:
+        v.tipo = 'start'
+    if abaixo(v, v.ant) and abaixo(v, v.prox) and v.theta > 180:
+        v.tipo = 'split'
+    if acima(v, v.ant) and acima(v, v.prox) and v.theta < 180:
+        v.tipo = 'end'
+    if acima(v, v.ant) and acima(v, v.prox) and v.theta > 180:
+        v.tipo = 'merge'
+    return 
+
+def abaixo(p, q):
+    if (q.y < p.y or (q.y == p.y and q.x > p.x) ):
+        return True
+    return False
+
+def acima(p, q):
+    if (q.y > p.y) or (q.y == p.y and q.x < p.x):
+        return True
+    return False
+
+
+
 
 def sweep(poligono):
     Q = poligono.vertices[:]
@@ -205,7 +228,7 @@ def sweep(poligono):
         event.append(Q.pop())
         while Q and Q[-1] == event[0].y:
             event.append(Q.pop())
-        semi_reta_esq.intersect_any(poligono)
+        semi_reta_ant.intersect_any(poligono)
         semi_reta_dir.intersect_any(poligono)
         print "faz alguma coisa"
 

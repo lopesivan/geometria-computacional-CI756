@@ -10,7 +10,8 @@ for i in xrange(num_pontos):
 p = Poligono(vertices)
 
 p.classify()
-
+for v in p.vertices:
+    classifica(v)
 print_v(p)
     
 
