@@ -15,16 +15,17 @@ class Ponto(object):
         self.theta = None
 
     def __repr__(self):
-        return "%s (%s,%s)" % (self.id, self.x, self.y)
+        return "%s (%s,%s) \'tipo\': \'%s\'" % (self.id, self.x, self.y, self.tipo)
 
 class Segmento(object):
     def __init__(self, id, v1, v2):
         self.id = id
         self.v1 = v1
         self.v2 = v2
+        self.helper = None
 
     def __repr__(self):
-        return "%s {%s, %s}" % (self.id, self.v1, self.v2)
+        return "%s {%s, %s}" % (self.id, self.v1.id, self.v2.id)
     #-----------------------------------------------#
     # Calcula a intersecção de dois segmentos
     # Entrada: um segmento
@@ -105,11 +106,11 @@ class Poligono(object):
         # forma o poligono na ordem em que foi dada na entrada
         for i in xrange(0, len(vertices)):
             self.vertices[i-1].prox = self.vertices[i]
-            self.vertices[i].ant = vertices[i-1]#Segmento(vertices[i-1], vertices[i])
-            #self.segments.append(Segmento(vertices[i], vertices[i+1]))
-        #self.vertices[len(vertices)-2].prox = self.vertices[len(vertices)-1].ant
-        # após formar o polígono, ordena os vértices com relação à coordenada y
-        quick_order_y(self.vertices, 0, len(vertices)-1)
+            self.vertices[i].ant = vertices[i-1]
+            if i < len(vertices)-1:
+                self.segments.append(Segmento(i,vertices[i], vertices[i+1]))
+        self.segments.append(Segmento(len(vertices)-1, vertices[len(vertices)-1], vertices[0]))
+
 
     #-----------------------------------------------#
     # Decompoe o poligono em poligonos monotonicos
@@ -160,7 +161,8 @@ class Poligono(object):
         return True
 
 #-----------------------------------------------#
-# Ordenação de vértices pela coordenada y
+# Ordenação de vértices pela coordenada y, baseado
+# em quicksort
 # Entrada: uma lista de vertices
 # Saida: a lista ordenada pela coordenada y
 #-----------------------------------------------#    
@@ -190,27 +192,109 @@ def quick_order_y(v, esq, dir):
 def theta(x1, y1, x2, y2): # adaptar para receber um segmento
     dot = (x1 * x2) + (y1 * y2)
     denom = sqrt((x1 ** 2 + y1 ** 2) * (x2 ** 2 + y2 ** 2))
-    if x1 * y2 > x2 * y1:
+    if x1 * y2 < x2 * y1:
         angulo = math.degrees(acos(dot/denom)) 
     else:
         angulo = 360.0 - math.degrees(acos(dot/denom))
     return int(angulo)
 
-def classifica(v):
+
+#-----------------------------------------------#
+# Função que implementa sweep line para dividir
+# o poligono em pedaços monotônicos
+# Entrada: um Poligono
+# Saída: uma subdivisão em D
+#-----------------------------------------------#    
+def sweep(p):
+    status = []
+    Q = p.vertices[:]
+    quick_order_y(Q, 0, len(Q)-1)
+    while Q:
+        v = Q.pop()
+        handle_vertex(v, status)
+
+
+#-----------------------------------------------#
+# Lida com cada tipo de vertice
+# Entrada: um vértice
+# Saída: a função apropriada para cada tipo de 
+#        vértice
+#-----------------------------------------------#    
+def handle_vertex(v, status):
+    # vertice do tipo start
     if abaixo(v, v.ant) and abaixo(v, v.prox) and v.theta < 180:
         v.tipo = 'start'
-    if (abaixo(v, v.ant) and acima(v, v.prox)) or (abaixo(v, v.prox) and acima(v, v.ant)):
-        v.tipo = 'regular'
-    if abaixo(v, v.ant) and abaixo(v, v.prox) and v.theta > 180:
-        v.tipo = 'split'
+        p.segments[v.id].helper = p.vertices[v.id]
+        status.append(p.segments[v.id])
+    
+    # vertice do tipo end
     if acima(v, v.ant) and acima(v, v.prox) and v.theta < 180:
         v.tipo = 'end'
+        if p.segments[v.id-1].helper.tipo == 'merge':
+            insere_diagonal(v, p.segments[v.id-1].helper)
+        status.remove(p.segments[v.id-1])
+
+    # vertice do tipo split
+    if abaixo(v, v.ant) and abaixo(v, v.prox) and v.theta > 180:
+        v.tipo = 'split'
+        aresta = esquerda(status, v)
+        insere_diagonal(v, aresta.helper)
+        aresta.helper = v
+        p.segments[v.id].helper = v
+        status.append(p.segments[v.id])
+
+    # vertice do tipo merge
     if acima(v, v.ant) and acima(v, v.prox) and v.theta > 180:
         v.tipo = 'merge'
+        if p.segments[v.id-1].helper.tipo == 'merge':
+            insere_diagonal(v, p.segments[v.id-1].helper)
+        status.remove(p.segments[v.id-1])
+        aresta = esquerda(status, v)
+        if aresta.helper.tipo == 'merge':
+            insere_diagonal(v, aresta.helper)
+        aresta.helper = v
+    
+    # vertice normal
+    if (abaixo(v, v.ant) and acima(v, v.prox)) or (abaixo(v, v.prox) and acima(v, v.ant)):
+        v.tipo = 'regular'
+        if interior_dir(v):
+            if p.segments[v.id-1].helper.tipo == 'merge':
+                insere_diagonal(v, p.segments[v.id-1].helper)
+            status.remove(p.segments[v.id-1])
+            p.segments[v.id].helper = v
+            status.append(p.segments[v.id])
+        else:
+            aresta = esquerda(status, v)
+            if aresta.helper.tipo == 'merge':
+                insere_diagonal(v, aresta.helper)
+            aresta.helper = v            
     return 
 
 
+#-----------------------------------------------#
+# Insere uma diagonal do vertice ao helper em D
+# Entrada: um vertice e o helper
+# Saída: insere a aresta formada pelos dois vertices
+#        em D
+#-----------------------------------------------#    
+def insere_diagonal(e, helper):
+    # insere a aresta (v_i, helper) em D
+    # isso faz parte do mapeamento dos subpoligonos
+    return True
 
+#-----------------------------------------------#
+# Função para encontrar a aresta imediatamente
+# à esquerda do vertice v
+# Entrada: um lista, um vertice
+# Saída: a aresta à esquerda de v,
+#        False se não houver
+#-----------------------------------------------#    
+def esquerda(status, v):
+    return True
+
+#-----------------------------------------------#
+# Funções helper
+#-----------------------------------------------#    
 def abaixo(p, q):
     if (q.y < p.y or (q.y == p.y and q.x > p.x) ):
         return True
@@ -221,24 +305,13 @@ def acima(p, q):
         return True
     return False
 
-
-
-
-def sweep(p):
-    status = []
-    Q = p.vertices[:]
-    while Q:
-        v = Q.pop()
-        handle_vertex(v)
-
-
 def cross_sign(x1, y1, x2, y2):
     return x1 * y2 < x2 * y1
 
 def print_v(vertices):
     #print "os ", len(p.vertices)," vertices:"
     for v in vertices:
-        print "     ", v, " tipo: ", v.tipo, " 0: ", v.theta
+        print "     ", v, " 0: ", v.theta
         print v.ant, " --- ", v.prox
         print ""
 
