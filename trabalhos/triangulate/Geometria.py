@@ -15,15 +15,16 @@ class Ponto(object):
         self.theta = None
 
     def __repr__(self):
-        return "(%s,%s)" % (self.x,self.y)
+        return "%s (%s,%s)" % (self.id, self.x, self.y)
 
 class Segmento(object):
-    def __init__(self, v1, v2):
+    def __init__(self, id, v1, v2):
+        self.id = id
         self.v1 = v1
         self.v2 = v2
 
     def __repr__(self):
-        return "{%s, %s}"%(self.v1,self.v2)
+        return "%s {%s, %s}" % (self.id, self.v1, self.v2)
     #-----------------------------------------------#
     # Calcula a intersecção de dois segmentos
     # Entrada: um segmento
