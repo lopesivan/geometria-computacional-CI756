@@ -5,7 +5,7 @@ num_pontos = int(raw_input())
 vertices = [] 
 for i in xrange(num_pontos):
     x, y = map(int, raw_input().split())
-    vertices.append(Ponto(x,y))
+    vertices.append(Ponto(i,x,y))
 
 p = Poligono(vertices)
 

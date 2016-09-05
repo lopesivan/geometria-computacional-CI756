@@ -4,7 +4,8 @@ from math import sqrt
 from math import acos, cos, degrees
 
 class Ponto(object):
-    def __init__(self, x, y):
+    def __init__(self, id, x, y):
+        self.id = id
         self.x = x
         self.y = y
 
@@ -195,10 +196,10 @@ def theta(x1, y1, x2, y2): # adaptar para receber um segmento
     return int(angulo)
 
 def classifica(v):
-    if (abaixo(v, v.ant) and acima(v, v.prox)) or (abaixo(v, v.prox) and acima(v, v.ant)):
-        v.tipo = 'regular'
     if abaixo(v, v.ant) and abaixo(v, v.prox) and v.theta < 180:
         v.tipo = 'start'
+    if (abaixo(v, v.ant) and acima(v, v.prox)) or (abaixo(v, v.prox) and acima(v, v.ant)):
+        v.tipo = 'regular'
     if abaixo(v, v.ant) and abaixo(v, v.prox) and v.theta > 180:
         v.tipo = 'split'
     if acima(v, v.ant) and acima(v, v.prox) and v.theta < 180:
@@ -206,6 +207,8 @@ def classifica(v):
     if acima(v, v.ant) and acima(v, v.prox) and v.theta > 180:
         v.tipo = 'merge'
     return 
+
+
 
 def abaixo(p, q):
     if (q.y < p.y or (q.y == p.y and q.x > p.x) ):
@@ -220,20 +223,12 @@ def acima(p, q):
 
 
 
-def sweep(poligono):
-    Q = poligono.vertices[:]
-    i = 1
-    #sweep_segment = Segment(Ponto(-1,Q[-1].y), Ponto(10, Q[-1].y))
+def sweep(p):
+    status = []
+    Q = p.vertices[:]
     while Q:
-        print 'evento ', i
-        event = []
-        event.append(Q.pop())
-        while Q and Q[-1].y == event[0].y:
-            event.append(Q.pop())
-        if Q:
-            print Q[-1]
-        print Q, "  -  ", event 
-        i += 1
+        v = Q.pop()
+        handle_vertex(v)
 
 
 def cross_sign(x1, y1, x2, y2):
