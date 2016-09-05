@@ -13,7 +13,7 @@ class Ponto(object):
         self.tipo = None
         self.theta = None
 
-    def __str__(self):
+    def __repr__(self):
         return "(%s,%s)" % (self.x,self.y)
 
 class Segmento(object):
@@ -21,7 +21,7 @@ class Segmento(object):
         self.v1 = v1
         self.v2 = v2
 
-    def __str__(self):
+    def __repr__(self):
         return "{%s, %s}"%(self.v1,self.v2)
     #-----------------------------------------------#
     # Calcula a intersecção de dois segmentos
@@ -222,23 +222,26 @@ def acima(p, q):
 
 def sweep(poligono):
     Q = poligono.vertices[:]
-    sweep_segment = Segment(Ponto(-1,Q[-1].y), Ponto(10, Q[-1].y))
+    i = 1
+    #sweep_segment = Segment(Ponto(-1,Q[-1].y), Ponto(10, Q[-1].y))
     while Q:
+        print 'evento ', i
         event = []
         event.append(Q.pop())
-        while Q and Q[-1] == event[0].y:
+        while Q and Q[-1].y == event[0].y:
             event.append(Q.pop())
-        semi_reta_ant.intersect_any(poligono)
-        semi_reta_dir.intersect_any(poligono)
-        print "faz alguma coisa"
+        if Q:
+            print Q[-1]
+        print Q, "  -  ", event 
+        i += 1
 
 
 def cross_sign(x1, y1, x2, y2):
     return x1 * y2 < x2 * y1
 
-def print_v(p):
-    print "os ", len(p.vertices)," vertices:"
-    for v in p.vertices:
+def print_v(vertices):
+    #print "os ", len(p.vertices)," vertices:"
+    for v in vertices:
         print "     ", v, " tipo: ", v.tipo, " 0: ", v.theta
         print v.ant, " --- ", v.prox
         print ""

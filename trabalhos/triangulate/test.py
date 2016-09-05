@@ -12,9 +12,9 @@ p = Poligono(vertices)
 p.classify()
 for v in p.vertices:
     classifica(v)
-print_v(p)
+#print_v(p.vertices)
     
-
+sweep(p)
 
 #print_s(p.segments)
 
