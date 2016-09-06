@@ -234,7 +234,7 @@ def handle_vertex(p, v, status):
         v.tipo = 'end'
         #print 'end vertice', v
         if p.segments[v.id-1].helper.tipo == 'merge':
-            insere_diagonal(v, p.segments[v.id-1].helper)
+            insere_diagonal(p, v, p.segments[v.id-1].helper)
         status.remove(p.segments[v.id-1])
 
     # vertice do tipo split
@@ -242,7 +242,7 @@ def handle_vertex(p, v, status):
         v.tipo = 'split'
         #print 'split vertice', v
         aresta = esquerda(status, v)
-        insere_diagonal(v, aresta.helper)
+        insere_diagonal(p, v, aresta.helper)
         aresta.helper = v
         p.segments[v.id].helper = v
         status.append(p.segments[v.id])
@@ -252,11 +252,11 @@ def handle_vertex(p, v, status):
         v.tipo = 'merge'
         #print 'merge vertice', v
         if p.segments[v.id-1].helper.tipo == 'merge':
-            insere_diagonal(v, p.segments[v.id-1].helper)
+            insere_diagonal(p, v, p.segments[v.id-1].helper)
         status.remove(p.segments[v.id-1])
         aresta = esquerda(status, v)
         if aresta.helper.tipo == 'merge':
-            insere_diagonal(v, aresta.helper)
+            insere_diagonal(p, v, aresta.helper)
         aresta.helper = v
     
     # vertice normal
@@ -269,7 +269,8 @@ def handle_vertex(p, v, status):
 
             # caso o helper da aresta for do tipo merge, insere uma diagonal em D
             if p.segments[v.id-1].helper.tipo == 'merge':
-                D.append(Segmento(e,helper))                
+                insere_diagonal(p, v, p.segments[v.id-1].helper)
+                                
 
             status.remove(p.segments[v.id-1])
             p.segments[v.id].helper = v
@@ -279,7 +280,7 @@ def handle_vertex(p, v, status):
 
             # caso o helper da aresta for do tipo merge, insere uma diagonal em D
             if aresta.helper.tipo == 'merge':
-                D.append(Segmento(e,helper))
+                insere_diagonal(p, v, p.segments[v.id].helper)
             aresta.helper = v            
     return 
 
@@ -300,9 +301,10 @@ def interior_dir(v):
 # Saída: insere a aresta formada pelos dois vertices
 #        em D
 #-----------------------------------------------#    
-def insere_diagonal(e, helper, D):
+def insere_diagonal(p, v, helper):
     # insere a aresta (v_i, helper) em D
     # isso faz parte do mapeamento dos subpoligonos
+    p.segments.append(Segmento(len(p.segments) - 1, v, helper))
     return True
 
 #-----------------------------------------------#
