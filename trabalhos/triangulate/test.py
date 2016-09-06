@@ -8,7 +8,7 @@ for i in xrange(num_pontos):
     vertices.append(Ponto(i,x,y))
 
 p = Poligono(vertices)
-print p.segments
+#print p.segments
 p.classify()
 #print_v(p.vertices)
     
@@ -16,18 +16,7 @@ sweep(p)
 #for v in p.vertices:
 #    handle_vertex(v)
 print_v(p.vertices)
-#print_s(p.segments)
+print_s(p.segments)
 
 #p.monotone_decomposition()
 
-#x = [1,1,2,3,4,5,5,5,6,6,7,8,9,9,9]
-#print x
-#while x:
-#    v = []
-#    v.append(x.pop())
-#    print v
-#    if x:
-#        while x and x[-1] == v[0]:
-#            print 'x[-1] ', x[-1], ' v ', v
-#            v.append(x.pop())
-#    print '---'
