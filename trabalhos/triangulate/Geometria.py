@@ -211,8 +211,8 @@ def sweep(p):
     quick_order_y(Q, 0, len(Q)-1)
     while Q:
         v = Q.pop()
-        handle_vertex(v, status)
-
+        handle_vertex(p, v, status)
+        #print 'status Tao: ', status
 
 #-----------------------------------------------#
 # Lida com cada tipo de vertice
@@ -220,16 +220,19 @@ def sweep(p):
 # Saída: a função apropriada para cada tipo de 
 #        vértice
 #-----------------------------------------------#    
-def handle_vertex(v, status):
+def handle_vertex(p, v, status):
+    D = []
     # vertice do tipo start
     if abaixo(v, v.ant) and abaixo(v, v.prox) and v.theta < 180:
         v.tipo = 'start'
+        #print 'start vertice', v
         p.segments[v.id].helper = p.vertices[v.id]
         status.append(p.segments[v.id])
     
     # vertice do tipo end
     if acima(v, v.ant) and acima(v, v.prox) and v.theta < 180:
         v.tipo = 'end'
+        #print 'end vertice', v
         if p.segments[v.id-1].helper.tipo == 'merge':
             insere_diagonal(v, p.segments[v.id-1].helper)
         status.remove(p.segments[v.id-1])
@@ -237,6 +240,7 @@ def handle_vertex(v, status):
     # vertice do tipo split
     if abaixo(v, v.ant) and abaixo(v, v.prox) and v.theta > 180:
         v.tipo = 'split'
+        #print 'split vertice', v
         aresta = esquerda(status, v)
         insere_diagonal(v, aresta.helper)
         aresta.helper = v
@@ -246,6 +250,7 @@ def handle_vertex(v, status):
     # vertice do tipo merge
     if acima(v, v.ant) and acima(v, v.prox) and v.theta > 180:
         v.tipo = 'merge'
+        #print 'merge vertice', v
         if p.segments[v.id-1].helper.tipo == 'merge':
             insere_diagonal(v, p.segments[v.id-1].helper)
         status.remove(p.segments[v.id-1])
@@ -257,18 +262,36 @@ def handle_vertex(v, status):
     # vertice normal
     if (abaixo(v, v.ant) and acima(v, v.prox)) or (abaixo(v, v.prox) and acima(v, v.ant)):
         v.tipo = 'regular'
+        #print 'regular vertice', v
+
+        # Caso o interior do poligono esteja para direita
         if interior_dir(v):
+
+            # caso o helper da aresta for do tipo merge, insere uma diagonal em D
             if p.segments[v.id-1].helper.tipo == 'merge':
-                insere_diagonal(v, p.segments[v.id-1].helper)
+                D.append(Segmento(e,helper))                
+
             status.remove(p.segments[v.id-1])
             p.segments[v.id].helper = v
             status.append(p.segments[v.id])
         else:
             aresta = esquerda(status, v)
+
+            # caso o helper da aresta for do tipo merge, insere uma diagonal em D
             if aresta.helper.tipo == 'merge':
-                insere_diagonal(v, aresta.helper)
+                D.append(Segmento(e,helper))
             aresta.helper = v            
     return 
+
+#-----------------------------------------------#
+# Insere uma diagonal do vertice ao helper em D
+# Entrada: um vertice e o helper
+# Saída: insere a aresta formada pelos dois vertices
+#        em D
+#-----------------------------------------------#
+def interior_dir(v):
+    
+    return True
 
 
 #-----------------------------------------------#
@@ -277,7 +300,7 @@ def handle_vertex(v, status):
 # Saída: insere a aresta formada pelos dois vertices
 #        em D
 #-----------------------------------------------#    
-def insere_diagonal(e, helper):
+def insere_diagonal(e, helper, D):
     # insere a aresta (v_i, helper) em D
     # isso faz parte do mapeamento dos subpoligonos
     return True
@@ -286,15 +309,29 @@ def insere_diagonal(e, helper):
 # Função para encontrar a aresta imediatamente
 # à esquerda do vertice v
 # Entrada: um lista, um vertice
-# Saída: a aresta à esquerda de v,
-#        False se não houver
+# Saída: a aresta à esquerda de v
 #-----------------------------------------------#    
 def esquerda(status, v):
-    return True
+    menor = 1000000
+    for e in status:
+        d = distancia(e, v)
+        if d < menor:
+            menor = d
+            ej = e
+    print d, ej
+    return ej
 
 #-----------------------------------------------#
 # Funções helper
 #-----------------------------------------------#    
+def distancia(e, v):
+    num = (e.v2.y - e.v1.y)*v.x - (e.v2.x - e.v1.x)*v.y + e.v2.x * e.v1.y - e.v2.y * e.v1.x
+    denom = sqrt( (e.v2.y - e.v1.y)**2 + (e.v2.x - e.v1.x)**2 ) 
+    if denom == 0:
+        return False
+    else:
+        return  num / denom
+
 def abaixo(p, q):
     if (q.y < p.y or (q.y == p.y and q.x > p.x) ):
         return True
