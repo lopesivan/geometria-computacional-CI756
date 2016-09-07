@@ -119,6 +119,7 @@ class Poligono(object):
             self.vertices[i].ant = vertices[i-1]
             if i < len(vertices)-1:
                 self.segments.append(Edge(i,vertices[i], vertices[i+1]))
+                self.vertices[i].edge = self.segments[i]
                 self.segments[i].twin = Edge(-i, vertices[i+1], vertices[i])
         self.segments.append(Edge(len(vertices)-1, vertices[len(vertices)-1], vertices[0]))
         self.segments[len(vertices)-1].twin = Edge(-(len(vertices)-1), vertices[0], vertices[len(vertices)-1])
@@ -380,4 +381,4 @@ def print_v(vertices):
 def print_s(segments):
     print "os segmentos:"
     for s in segments:
-        print s, ' ', s.twin
+        print s, ' ', s.twin, ' ', s.v1.edge
