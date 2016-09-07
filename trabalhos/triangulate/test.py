@@ -16,6 +16,6 @@ sweep(p)
 #for v in p.vertices:
 #    handle_vertex(v)
 #print_v(p.vertices)
-#print_s(p.segments)
+print_s(p.segments)
 
 #p.monotone_decomposition()

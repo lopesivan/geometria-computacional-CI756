@@ -11,15 +11,20 @@ class Ponto(object):
 
         self.prox = None
         self.ant = None
+        self.edge = None
         self.tipo = None
         self.theta = None
 
     def __repr__(self):
         return "%s (%s,%s) \'tipo\': \'%s\'" % (self.id, self.x, self.y, self.tipo)
 
-class Segmento(object):
+class Edge(object):
     def __init__(self, id, v1, v2):
         self.id = id
+        self.orig = v1
+        self.twin = None
+        self.next = None
+        self.prev = None
         self.v1 = v1
         self.v2 = v2
         self.helper = None
@@ -74,8 +79,12 @@ class Segmento(object):
             return x_intersec
 
     # a fazer: retorna o vertice logo acima da aresta
-    def helper_split(self):
-        return True
+    def origin(self):
+        return self.v1
+
+    def next(self):
+        return self.orig.edge
+
 
     # a fazer: retorna o vertice logo abaixo da aresta
     def helper_merge(self):
@@ -109,9 +118,10 @@ class Poligono(object):
             self.vertices[i-1].prox = self.vertices[i]
             self.vertices[i].ant = vertices[i-1]
             if i < len(vertices)-1:
-                self.segments.append(Segmento(i,vertices[i], vertices[i+1]))
-        self.segments.append(Segmento(len(vertices)-1, vertices[len(vertices)-1], vertices[0]))
-
+                self.segments.append(Edge(i,vertices[i], vertices[i+1]))
+                self.segments[i].twin = Edge(-i, vertices[i+1], vertices[i])
+        self.segments.append(Edge(len(vertices)-1, vertices[len(vertices)-1], vertices[0]))
+        self.segments[len(vertices)-1].twin = Edge(-(len(vertices)-1), vertices[0], vertices[len(vertices)-1])
 
     #-----------------------------------------------#
     # Decompoe o poligono em poligonos monotonicos
@@ -308,7 +318,7 @@ def insere_diagonal(p, v, helper):
     #print 'p.monotone: '
     #for v in p.monotone:
     #    print 'v de p.monotone',v
-    #diagonal = Segmento(len(p.segments) - 1, v, helper)
+    #diagonal = Edge(len(p.segments) - 1, v, helper)
     #p.segments.append(diagonal)
     #sub_poligono = monotone_piece(p, diagonal)
     #p.monotone.append(sub_poligono)
@@ -370,4 +380,4 @@ def print_v(vertices):
 def print_s(segments):
     print "os segmentos:"
     for s in segments:
-        print s
+        print s, ' ', s.twin
