@@ -44,7 +44,7 @@ class Segmento(object):
         div1 = (self.v2.x - self.v1.x)
         div2 = (seg.v2.x - seg.v1.x)
         if ((div1 == 0) or (div2 == 0)):
-            print "Error! Divisao por 0 nao permitida!"
+            print "Error! Divisao por 0!"
             return False
 
         A1 = float((self.v2.y - self.v1.y) / div1)
@@ -100,6 +100,7 @@ class Poligono(object):
     def __init__(self, vertices):
         self.num_triangulos = None
         self.triangulos = []
+        self.monotone = []
         self.segments = []
         self.vertices = vertices
 
@@ -114,7 +115,7 @@ class Poligono(object):
 
     #-----------------------------------------------#
     # Decompoe o poligono em poligonos monotonicos
-    # Entrada: poligono simples P 
+    # Entrada: poligono simples P
     # Saida: uma divisao de P em poligono monotonico
     #-----------------------------------------------#
     def monotone_decomposition(self):
@@ -122,7 +123,7 @@ class Poligono(object):
         print "..."
         Q = self.vertices[:]
         quick_order_y(Q, 0, len(Q)-1)
-        print_v(Q) 
+        print_v(Q)
         classify(Q)
         print_v(Q)
         return True
@@ -139,24 +140,24 @@ class Poligono(object):
 
         # remove os dois primeiros vertices V
         return True
-        
+
     #-----------------------------------------------#
     # Classifica os vertices em: start, split, merge,
     # regular ou end.
     # Entrada: uma lista de vertices
     # Saida: uma classificação dos vertices
-    #-----------------------------------------------#    
+    #-----------------------------------------------#
     def classify(self):
         #for i in xrange(0,len(self.vertices)):
         for v in self.vertices:
-            p1 = v.ant #self.vertices[i] #self.segments[i].v2 #  
-            ref = v #self.vertices[i - 1] #self.segments[i].v1 # 
-            p2 = v.prox #self.vertices[i - 2] #self.segments[i-1].v1 # 
+            p1 = v.ant #self.vertices[i] #self.segments[i].v2 #
+            ref = v #self.vertices[i - 1] #self.segments[i].v1 #
+            p2 = v.prox #self.vertices[i - 2] #self.segments[i-1].v1 #
 
             x1, y1 = p1.x - ref.x, p1.y - ref.y
             x2, y2 = p2.x - ref.x, p2.y - ref.y
             ref.theta = theta(x1, y1, x2, y2)
-            
+
 
         return True
 
@@ -165,11 +166,11 @@ class Poligono(object):
 # em quicksort
 # Entrada: uma lista de vertices
 # Saida: a lista ordenada pela coordenada y
-#-----------------------------------------------#    
+#-----------------------------------------------#
 def quick_order_y(v, esq, dir):
     pivo = esq
     for i in xrange(esq+1, dir+1):
-        j = i 
+        j = i
         if v[j].y < v[pivo].y:
             aux = v[j]
             while j > pivo:
@@ -177,23 +178,23 @@ def quick_order_y(v, esq, dir):
                 j -= 1
             v[j] = aux
             pivo += 1
-    if pivo-1 >= esq:   
+    if pivo-1 >= esq:
         quick_order_y(v, esq, pivo-1)
     if pivo+1 <= dir:
         quick_order_y(v, pivo+1, dir)
 
 
 #-----------------------------------------------#
-# Recebe dois vértices e retorna o angulo entre 
+# Recebe dois vértices e retorna o angulo entre
 # angulo entre eles
-# Entrada: 
-# Saida: 
-#-----------------------------------------------#    
+# Entrada:
+# Saida:
+#-----------------------------------------------#
 def theta(x1, y1, x2, y2): # adaptar para receber um segmento
     dot = (x1 * x2) + (y1 * y2)
     denom = sqrt((x1 ** 2 + y1 ** 2) * (x2 ** 2 + y2 ** 2))
     if x1 * y2 < x2 * y1:
-        angulo = math.degrees(acos(dot/denom)) 
+        angulo = math.degrees(acos(dot/denom))
     else:
         angulo = 360.0 - math.degrees(acos(dot/denom))
     return int(angulo)
@@ -204,31 +205,31 @@ def theta(x1, y1, x2, y2): # adaptar para receber um segmento
 # o poligono em pedaços monotônicos
 # Entrada: um Poligono
 # Saída: uma subdivisão em D
-#-----------------------------------------------#    
+#-----------------------------------------------#
 def sweep(p):
     status = []
+    D = []
     Q = p.vertices[:]
     quick_order_y(Q, 0, len(Q)-1)
     while Q:
         v = Q.pop()
+        p.monotone.append(v)
         handle_vertex(p, v, status)
-        #print 'status Tao: ', status
 
 #-----------------------------------------------#
 # Lida com cada tipo de vertice
 # Entrada: um vértice
-# Saída: a função apropriada para cada tipo de 
+# Saída: a função apropriada para cada tipo de
 #        vértice
-#-----------------------------------------------#    
+#-----------------------------------------------#
 def handle_vertex(p, v, status):
-    D = []
     # vertice do tipo start
     if abaixo(v, v.ant) and abaixo(v, v.prox) and v.theta < 180:
         v.tipo = 'start'
         #print 'start vertice', v
         p.segments[v.id].helper = p.vertices[v.id]
         status.append(p.segments[v.id])
-    
+
     # vertice do tipo end
     if acima(v, v.ant) and acima(v, v.prox) and v.theta < 180:
         v.tipo = 'end'
@@ -258,7 +259,7 @@ def handle_vertex(p, v, status):
         if aresta.helper.tipo == 'merge':
             insere_diagonal(p, v, aresta.helper)
         aresta.helper = v
-    
+
     # vertice normal
     if (abaixo(v, v.ant) and acima(v, v.prox)) or (abaixo(v, v.prox) and acima(v, v.ant)):
         v.tipo = 'regular'
@@ -270,7 +271,7 @@ def handle_vertex(p, v, status):
             # caso o helper da aresta for do tipo merge, insere uma diagonal em D
             if p.segments[v.id-1].helper.tipo == 'merge':
                 insere_diagonal(p, v, p.segments[v.id-1].helper)
-                                
+
 
             status.remove(p.segments[v.id-1])
             p.segments[v.id].helper = v
@@ -281,8 +282,8 @@ def handle_vertex(p, v, status):
             # caso o helper da aresta for do tipo merge, insere uma diagonal em D
             if aresta.helper.tipo == 'merge':
                 insere_diagonal(p, v, p.segments[v.id].helper)
-            aresta.helper = v            
-    return 
+            aresta.helper = v
+    return
 
 #-----------------------------------------------#
 # Insere uma diagonal do vertice ao helper em D
@@ -291,7 +292,7 @@ def handle_vertex(p, v, status):
 #        em D
 #-----------------------------------------------#
 def interior_dir(v):
-    
+
     return True
 
 
@@ -300,19 +301,32 @@ def interior_dir(v):
 # Entrada: um vertice e o helper
 # Saída: insere a aresta formada pelos dois vertices
 #        em D
-#-----------------------------------------------#    
+#-----------------------------------------------#
 def insere_diagonal(p, v, helper):
     # insere a aresta (v_i, helper) em D
     # isso faz parte do mapeamento dos subpoligonos
-    p.segments.append(Segmento(len(p.segments) - 1, v, helper))
+    #print 'p.monotone: '
+    #for v in p.monotone:
+    #    print 'v de p.monotone',v
+    #diagonal = Segmento(len(p.segments) - 1, v, helper)
+    #p.segments.append(diagonal)
+    #sub_poligono = monotone_piece(p, diagonal)
+    #p.monotone.append(sub_poligono)
     return True
+
+def monotone_piece(p, diagonal):
+    inicio = diagonal.v1
+    v = diagonal.v2
+    while v != inicio:
+        v = v.prox
+        return True
 
 #-----------------------------------------------#
 # Função para encontrar a aresta imediatamente
 # à esquerda do vertice v
 # Entrada: um lista, um vertice
 # Saída: a aresta à esquerda de v
-#-----------------------------------------------#    
+#-----------------------------------------------#
 def esquerda(status, v):
     menor = 1000000
     for e in status:
@@ -320,15 +334,14 @@ def esquerda(status, v):
         if d < menor:
             menor = d
             ej = e
-    print d, ej
     return ej
 
 #-----------------------------------------------#
 # Funções helper
-#-----------------------------------------------#    
+#-----------------------------------------------#
 def distancia(e, v):
     num = (e.v2.y - e.v1.y)*v.x - (e.v2.x - e.v1.x)*v.y + e.v2.x * e.v1.y - e.v2.y * e.v1.x
-    denom = sqrt( (e.v2.y - e.v1.y)**2 + (e.v2.x - e.v1.x)**2 ) 
+    denom = sqrt( (e.v2.y - e.v1.y)**2 + (e.v2.x - e.v1.x)**2 )
     if denom == 0:
         return False
     else:
