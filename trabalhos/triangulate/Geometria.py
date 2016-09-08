@@ -348,17 +348,17 @@ def insere_diagonal(p, v, helper):
 
     diagonal = Edge(len(p.edges)+1, v, helper, new_face)
     new_face.inner = diagonal
-    print 'diagonal ', diagonal
+    #print 'diagonal ', diagonal
     diagonal.prox = p.edges[helper.edge.id-1]# helper.edge #
-    print 'diagonal.prox ', diagonal.prox
+    #print 'diagonal.prox ', diagonal.prox
     diagonal.ant  = p.edges[v.edge.ant.id-1]#v.edge.ant #
-    print 'diagonal.ant ',diagonal.ant
+    #print 'diagonal.ant ',diagonal.ant
     twin = Edge(len(p.edges)+2, helper, v, p.edges[helper.id-2].face)
-    print 'twin ',twin
+    #print 'twin ',twin
     twin.prox = p.edges[v.edge.id-1]#v.edge #
-    print 'twin.prox ',twin.prox
+    #print 'twin.prox ',twin.prox
     twin.ant  = p.edges[helper.edge.ant.id-1] #helper.edge.ant #
-    print 'twin.ant ',twin.ant
+    #print 'twin.ant ',twin.ant
     diagonal.twin = twin
     twin.twin = diagonal
 
@@ -368,25 +368,25 @@ def insere_diagonal(p, v, helper):
 
 
     p.edges[helper.edge.id-1].ant.prox = diagonal
-    print 'p.edges[helper.edge.id-1].ant ', p.edges[helper.edge.id-1].ant
+    #print 'p.edges[helper.edge.id-1].ant ', p.edges[helper.edge.id-1].ant
     p.edges[helper.edge.ant.id-1].prox = diagonal.twin
-    print 'p.edges[helper.edge.ant.id-1].prox ', p.edges[helper.edge.ant.id-1].prox
+    #print 'p.edges[helper.edge.ant.id-1].prox ', p.edges[helper.edge.ant.id-1].prox
     p.edges[v.edge.ant.id-1].prox = diagonal
-    print 'p.edges[v.edge.ant.id-1].prox ', p.edges[v.edge.ant.id-1].prox
+    #print 'p.edges[v.edge.ant.id-1].prox ', p.edges[v.edge.ant.id-1].prox
     p.edges[v.edge.id-1].ant = diagonal.twin
-    print 'p.edges[v.edge.id-1].ant ', p.edges[v.edge.id-1].ant
+    #print 'p.edges[v.edge.id-1].ant ', p.edges[v.edge.id-1].ant
 
 
     v.edge.ant = diagonal.twin
-    print 'v.edge ', v.edge
+    #print 'v.edge ', v.edge
     helper.edge = diagonal.twin
-    print 'helper.edge ', helper.edge
+    #print 'helper.edge ', helper.edge
     p.vertices[helper.id-1].edge = helper.edge # p.edges[helper.id-1]
     p.vertices[v.id-1].edge = v.edge # p.edges[v.id-1]
 
     #print diagonal, new_face
-    print 'arestas de v',p.edges[v.id-1], p.edges[v.id-2]
-    print 'arestas de helper',  p.edges[helper.id-1], p.edges[helper.id-2]
+    #print 'arestas de v',p.edges[v.id-1], p.edges[v.id-2]
+    #print 'arestas de helper',  p.edges[helper.id-1], p.edges[helper.id-2]
     return True
 
 def monotone_piece(p, diagonal):
