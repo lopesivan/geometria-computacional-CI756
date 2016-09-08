@@ -23,7 +23,8 @@ class Face(object):
         self.id = id
         self.inner = inner
         self.outer = outer
-
+    def __repr__(self):
+        return "%s in: %s out: %s" % (self.id, self.inner, self.outer)
 
 class Edge(object):
     def __init__(self, id, v1, v2, face):
@@ -31,8 +32,8 @@ class Edge(object):
         self.orig = v1
         self.face = face
         self.twin = None
-        self.next = None
-        self.prev = None
+        self.prox = None
+        self.ant = None
         self.v1 = v1
         self.v2 = v2
         self.helper = None
@@ -135,8 +136,8 @@ class Poligono(object):
 
             # inicia as arestas
             if i < len(vertices)-1:
-                e = Edge(i,vertices[i], vertices[i+1], inner_face)
-                e_twin = Edge(-i, vertices[i+1], vertices[i], outer_face)
+                e = Edge(i+1,vertices[i], vertices[i+1], inner_face)
+                e_twin = Edge(-(i+1), vertices[i+1], vertices[i], outer_face)
 
                 # inicia as faces
                 if self.faces[1].inner == None:
@@ -150,15 +151,17 @@ class Poligono(object):
                 self.edges[i].twin = e_twin
 
         # inicia a última aresta
-        e = Edge(len(vertices)-1, vertices[len(vertices)-1], vertices[0], inner_face)
-        e_twin = Edge(-(len(vertices)-1), vertices[0], vertices[len(vertices)-1], outer_face)
+        e = Edge(len(vertices), vertices[len(vertices)-1], vertices[0], inner_face)
+        e_twin = Edge(-len(vertices), vertices[0], vertices[len(vertices)-1], outer_face)
         self.edges.append(e)
         self.vertices[len(vertices)-1].edge = e
         self.edges[len(vertices)-1].twin = e_twin
 
         for i in xrange(0, len(vertices)):
             self.edges[i-1].prox = self.edges[i]
+            self.edges[i-1].twin.prox = self.edges[i].twin
             self.edges[i].ant = self.edges[i-1]
+            self.edges[i].twin.ant = self.edges[i-1].twin
     #-----------------------------------------------#
     # Decompoe o poligono em poligonos monotonicos
     # Entrada: poligono simples P
@@ -272,15 +275,15 @@ def handle_vertex(p, v, status):
     # vertice do tipo start
     if abaixo(v, v.ant) and abaixo(v, v.prox) and v.theta < 180:
         v.tipo = 'start'
-        p.edges[v.id].helper = p.vertices[v.id]
-        status.append(p.edges[v.id])
+        p.edges[v.id-1].helper = p.vertices[v.id-1]
+        status.append(p.edges[v.id-1])
 
     # vertice do tipo end
     if acima(v, v.ant) and acima(v, v.prox) and v.theta < 180:
         v.tipo = 'end'
-        if p.edges[v.id-1].helper.tipo == 'merge':
-            insere_diagonal(p, v, p.edges[v.id-1].helper)
-        status.remove(p.edges[v.id-1])
+        if p.edges[v.id-2].helper.tipo == 'merge':
+            insere_diagonal(p, v, p.edges[v.id-2].helper)
+        status.remove(p.edges[v.id-2])
 
     # vertice do tipo split
     if abaixo(v, v.ant) and abaixo(v, v.prox) and v.theta > 180:
@@ -288,15 +291,15 @@ def handle_vertex(p, v, status):
         aresta = esquerda(status, v)
         insere_diagonal(p, v, aresta.helper)
         aresta.helper = v
-        p.edges[v.id].helper = v
-        status.append(p.edges[v.id])
+        p.edges[v.id-1].helper = v
+        status.append(p.edges[v.id-1])
 
     # vertice do tipo merge
     if acima(v, v.ant) and acima(v, v.prox) and v.theta > 180:
         v.tipo = 'merge'
-        if p.edges[v.id-1].helper.tipo == 'merge':
-            insere_diagonal(p, v, p.edges[v.id-1].helper)
-        status.remove(p.edges[v.id-1])
+        if p.edges[v.id-2].helper.tipo == 'merge':
+            insere_diagonal(p, v, p.edges[v.id-2].helper)
+        status.remove(p.edges[v.id-2])
         aresta = esquerda(status, v)
         if aresta.helper.tipo == 'merge':
             insere_diagonal(p, v, aresta.helper)
@@ -308,16 +311,16 @@ def handle_vertex(p, v, status):
         # Caso o interior do poligono esteja para direita
         if interior_dir(v):
             # caso o helper da aresta for do tipo merge, insere uma diagonal em D
-            if p.edges[v.id-1].helper.tipo == 'merge':
-                insere_diagonal(p, v, p.edges[v.id-1].helper)
-            status.remove(p.edges[v.id-1])
-            p.edges[v.id].helper = v
-            status.append(p.edges[v.id])
+            if p.edges[v.id-2].helper.tipo == 'merge':
+                insere_diagonal(p, v, p.edges[v.id-2].helper)
+            status.remove(p.edges[v.id-2])
+            p.edges[v.id-1].helper = v
+            status.append(p.edges[v.id-1])
         else:
             aresta = esquerda(status, v)
             # caso o helper da aresta for do tipo merge, insere uma diagonal em D
             if aresta.helper.tipo == 'merge':
-                insere_diagonal(p, v, p.edges[v.id].helper)
+                insere_diagonal(p, v, p.edges[v.id-1].helper)
             aresta.helper = v
     return
 
@@ -341,11 +344,49 @@ def interior_dir(v):
 def insere_diagonal(p, v, helper):
     # insere a aresta (v_i, helper) em D
     # isso faz parte do mapeamento dos subpoligonos
-    #print 'p.monotone: '
-    #for v in p.monotone:
-    #    print 'v de p.monotone',v
-    #sub_poligono = monotone_piece(p, diagonal)
-    #p.monotone.append(sub_poligono)
+    new_face = Face(len(p.faces), None, None)
+
+    diagonal = Edge(len(p.edges)+1, v, helper, new_face)
+    new_face.inner = diagonal
+    print 'diagonal ', diagonal
+    diagonal.prox = p.edges[helper.edge.id-1]# helper.edge #
+    print 'diagonal.prox ', diagonal.prox
+    diagonal.ant  = p.edges[v.edge.ant.id-1]#v.edge.ant #
+    print 'diagonal.ant ',diagonal.ant
+    twin = Edge(len(p.edges)+2, helper, v, p.edges[helper.id-2].face)
+    print 'twin ',twin
+    twin.prox = p.edges[v.edge.id-1]#v.edge #
+    print 'twin.prox ',twin.prox
+    twin.ant  = p.edges[helper.edge.ant.id-1] #helper.edge.ant #
+    print 'twin.ant ',twin.ant
+    diagonal.twin = twin
+    twin.twin = diagonal
+
+    p.edges.append(diagonal)
+    p.edges.append(twin)
+    p.faces.append(new_face)
+
+
+    p.edges[helper.edge.id-1].ant.prox = diagonal
+    print 'p.edges[helper.edge.id-1].ant ', p.edges[helper.edge.id-1].ant
+    p.edges[helper.edge.ant.id-1].prox = diagonal.twin
+    print 'p.edges[helper.edge.ant.id-1].prox ', p.edges[helper.edge.ant.id-1].prox
+    p.edges[v.edge.ant.id-1].prox = diagonal
+    print 'p.edges[v.edge.ant.id-1].prox ', p.edges[v.edge.ant.id-1].prox
+    p.edges[v.edge.id-1].ant = diagonal.twin
+    print 'p.edges[v.edge.id-1].ant ', p.edges[v.edge.id-1].ant
+
+
+    v.edge.ant = diagonal.twin
+    print 'v.edge ', v.edge
+    helper.edge = diagonal.twin
+    print 'helper.edge ', helper.edge
+    p.vertices[helper.id-1].edge = helper.edge # p.edges[helper.id-1]
+    p.vertices[v.id-1].edge = v.edge # p.edges[v.id-1]
+
+    #print diagonal, new_face
+    print 'arestas de v',p.edges[v.id-1], p.edges[v.id-2]
+    print 'arestas de helper',  p.edges[helper.id-1], p.edges[helper.id-2]
     return True
 
 def monotone_piece(p, diagonal):
@@ -403,5 +444,18 @@ def print_v(vertices):
 
 def print_s(arestas):
     for s in arestas:
-        print s, ' ', s.twin, ' ', s.v1.edge
+        print s, '        ', s.twin, '       ', s.v1.edge
         print s.ant, '  ----  ', s.prox
+
+def print_f(faces):
+    for f in faces:
+        inicio = f.inner
+        e = inicio.prox
+        i = 0
+        print 'olha ai', f
+        while e.id != inicio.id and i < 10:
+            print e
+            e = e.prox
+            i = i + 1
+        #print f
+        #   print f.inner.prox
