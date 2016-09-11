@@ -177,18 +177,6 @@ class Poligono(object):
         print_v(Q)
         return True
 
-    #-----------------------------------------------#
-    # Calcula a triangulacao de um poligono
-    # Entrada: self
-    # Saida: um poligono triangulado,
-    #        false caso nao exista
-    #-----------------------------------------------#
-    def triangulate(self):
-        # orderna os vertices com relacao ao eixo x
-        V = quick_order_x(self.vertices, 0, len(self.vertices)-1)
-
-        # remove os dois primeiros vertices V
-        return True
 
     #-----------------------------------------------#
     # Classifica os vertices em: start, split, merge,
@@ -331,7 +319,79 @@ def handle_vertex(p, v, status):
 #        em D
 #-----------------------------------------------#
 def interior_dir(v):
+    return True
 
+#-----------------------------------------------#
+# Calcula a triangulacao de um poligono
+# Entrada: self
+# Saida: um poligono triangulado,
+#        false caso nao exista
+#-----------------------------------------------#
+def triangulate(p):
+    Q = p.faces[1:]
+
+    #for i in xrange(1, len(p.faces)):
+    while Q:
+        #print len(p.faces)
+        f = Q.pop(0)#p.faces[i]
+        e = f.inner
+        #e = inicio.prox
+        #print f.id, inicio.id
+        #while e != inicio:
+            #print e
+        v1 = e.prox.prox.twin.orig.id
+        v2 = e.orig.id
+        if v1 == v2:
+            print f.id, ' eh a face de um triangulo'
+            print e.orig.id, e.prox.orig.id, e.prox.prox.orig.id
+            #break
+        else:
+            print e.ant, e, e.prox
+            teste = e.prox
+
+            # cria uma nova face
+            new_face = Face(len(p.faces), None, None)
+            v = e.prox.orig
+            helper = e.ant.orig
+            # cria a diagonal e sua twin
+            diagonal = Edge(len(p.edges)+1, v, helper, f)
+            twin = Edge(len(p.edges)+2, helper, v, new_face)
+            
+            # a proxima da diagonal, tem a mesma face que a aresta do helper 
+            # a anterior também
+            diagonal.prox = e.ant
+            diagonal.ant  = e
+            # a twin da diagonal recebe a nova face
+            twin.prox = e.prox
+            twin.ant  = e.ant.ant
+
+
+            e.ant.ant.prox = twin
+            e.ant.ant = diagonal
+            e.prox.ant = twin
+            e.prox = diagonal
+            #e.prox.ant = twin
+            #e.ant.ant.prox = twin
+            # a nova face é a face associada à 'twin' da nova diagonal
+            new_face.inner = twin
+            #diag_prox.face.inner = diagonal    
+
+            diagonal.twin = twin
+            twin.twin = diagonal
+
+
+
+            p.edges.append(diagonal)
+            p.edges.append(twin)
+            p.faces.append(new_face)
+
+            
+            #p.edges[-1].prox = teste
+            #p.faces[-1].inner = p.edges[-1]
+            #e.prox = p.edges[-2]
+            Q.append(p.faces[-1])
+            #print p.edges[len(p.edges)-2], e
+            #e = e.prox
     return True
 
 
@@ -342,23 +402,35 @@ def interior_dir(v):
 #        em D
 #-----------------------------------------------#
 def insere_diagonal(p, v, helper):
-    # insere a aresta (v_i, helper) em D
-    # isso faz parte do mapeamento dos subpoligonos
-    new_face = Face(len(p.faces), None, None)
+    
+    diag_prox = p.edges[helper.edge.id - 1]
+    diag_ant  = p.edges[v.edge.ant.id - 1]
+    twin_prox = p.edges[v.edge.id - 1]
+    twin_ant  = p.edges[helper.edge.ant.id - 1]
 
-    diagonal = Edge(len(p.edges)+1, v, helper, new_face)
-    new_face.inner = diagonal
-    #print 'diagonal ', diagonal
-    diagonal.prox = p.edges[helper.edge.id-1]# helper.edge #
-    #print 'diagonal.prox ', diagonal.prox
-    diagonal.ant  = p.edges[v.edge.ant.id-1]#v.edge.ant #
-    #print 'diagonal.ant ',diagonal.ant
-    twin = Edge(len(p.edges)+2, helper, v, p.edges[helper.id-2].face)
-    #print 'twin ',twin
-    twin.prox = p.edges[v.edge.id-1]#v.edge #
-    #print 'twin.prox ',twin.prox
-    twin.ant  = p.edges[helper.edge.ant.id-1] #helper.edge.ant #
-    #print 'twin.ant ',twin.ant
+    # cria uma nova face
+    new_face = Face(len(p.faces), None, None)
+    # cria a diagonal e sua twin
+    diagonal = Edge(len(p.edges)+1, v, helper, diag_prox.face)
+    twin = Edge(len(p.edges)+2, helper, v, new_face)
+    
+    # a proxima da diagonal, tem a mesma face que a aresta do helper 
+    diagonal.prox = diag_prox
+    diag_prox.ant = diagonal
+    # a nova face é a face associada à 'twin' da nova diagonal
+    new_face.inner = twin
+    twin_prox.face.inner = diagonal
+
+    # a anterior também
+    diagonal.ant  = diag_ant
+    diag_ant.prox = diagonal
+
+    # a twin da diagonal recebe a nova face
+    twin.prox = twin_prox
+    twin_prox.ant = twin
+    twin.ant  = twin_ant
+    twin_ant.prox = twin
+
     diagonal.twin = twin
     twin.twin = diagonal
 
@@ -366,30 +438,23 @@ def insere_diagonal(p, v, helper):
     p.edges.append(twin)
     p.faces.append(new_face)
 
-
-    p.edges[helper.edge.id-1].ant.prox = diagonal
-    #print 'p.edges[helper.edge.id-1].ant ', p.edges[helper.edge.id-1].ant
-    p.edges[helper.edge.ant.id-1].prox = diagonal.twin
-    #print 'p.edges[helper.edge.ant.id-1].prox ', p.edges[helper.edge.ant.id-1].prox
-    p.edges[v.edge.ant.id-1].prox = diagonal
-    #print 'p.edges[v.edge.ant.id-1].prox ', p.edges[v.edge.ant.id-1].prox
-    p.edges[v.edge.id-1].ant = diagonal.twin
-    #print 'p.edges[v.edge.id-1].ant ', p.edges[v.edge.id-1].ant
-
-
     v.edge.ant = diagonal.twin
     #print 'v.edge ', v.edge
     helper.edge = diagonal.twin
     #print 'helper.edge ', helper.edge
-    p.vertices[helper.id-1].edge = helper.edge # p.edges[helper.id-1]
-    p.vertices[v.id-1].edge = v.edge # p.edges[v.id-1]
 
+    inicio = twin.v1
+    e = twin.prox
+    while e.v1 != inicio:
+        e.face = new_face
+        e = e.prox
     #print diagonal, new_face
     #print 'arestas de v',p.edges[v.id-1], p.edges[v.id-2]
     #print 'arestas de helper',  p.edges[helper.id-1], p.edges[helper.id-2]
     return True
 
 def monotone_piece(p, diagonal):
+
     inicio = diagonal.v1
     v = diagonal.v2
     while v != inicio:
@@ -444,18 +509,15 @@ def print_v(vertices):
 
 def print_s(arestas):
     for s in arestas:
-        print s, '        ', s.twin, '       ', s.v1.edge
-        print s.ant, '  ----  ', s.prox
+        print s, s.face.id, s.prox
 
 def print_f(faces):
     for f in faces:
+        print 'face: ', f
         inicio = f.inner
         e = inicio.prox
-        i = 0
-        print 'olha ai', f
-        while e.id != inicio.id and i < 10:
+        while e != inicio:
             print e
             e = e.prox
-            i = i + 1
         #print f
         #   print f.inner.prox
