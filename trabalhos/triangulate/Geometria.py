@@ -325,8 +325,9 @@ def triangulo(e):
         return False
 
 #-----------------------------------------------#
-# Calcula a triangulacao de um poligono
-# Entrada: self
+# Insere diagonais para formar triangulos dentro 
+# do poligono
+# Entrada: poligono p
 # Saida: um poligono triangulado,
 #        false caso nao exista
 #-----------------------------------------------#
@@ -349,52 +350,63 @@ def triangulate(p):
             while angulo(e, e.ant) >= 180:
                 e = e.ant
                 f.inner = e
-                
-            v = e.prox.orig
-            helper = e.ant.orig
-            # cria uma nova face
-            new_face = Face(len(p.faces), None)
-            # cria a diagonal e sua twin
-            diagonal = Edge(len(p.edges)+1, v, helper, f)
-            twin = Edge(len(p.edges)+2, helper, v, new_face)
             
-            # a proxima da diagonal, tem a mesma face que a aresta do helper 
-            # a anterior também
-            diagonal.prox = e.ant
-            diagonal.ant  = e
-            # a twin da diagonal recebe a nova face
-            twin.prox = e.prox
-            twin.ant  = e.ant.ant
-
-
-            e.ant.ant.prox = twin
-            e.ant.ant = diagonal
-            e.prox.ant = twin
-            e.prox = diagonal
-            
-            # a nova face é a face associada à 'twin' da nova diagonal
-            new_face.inner = twin
-
-            diagonal.twin = twin
-            twin.twin = diagonal
-
-            # atualiza as faces que as arestas adicionadas apontam
-            diagonal.face = f
-            diagonal.prox.face = f
-            diagonal.ant.face  = f
-            # para as semi-arestas correspondentes também
-            twin.face = new_face
-            twin.prox.face = new_face
-            twin.ant.face  = new_face
-
-            p.edges.append(diagonal)
-            p.edges.append(twin)
-            p.faces.append(new_face)
+            # insere uma diagonal para fechar um triangulo
+            ear_clipping(p, e, e.ant)
 
             # adiciona a nova face na fila
             Q.append(p.faces[-1])
     return True
 
+#-----------------------------------------------#
+# Insere uma diagonal que forma um triangulo, 
+# parecido com insere_diagonal()
+# Entrada: o poligono e a aresta inicial da face  
+# Saída: o poligono dividido em dois
+#-----------------------------------------------#
+def ear_clipping(p, e, e_helper):
+    v = e.prox.orig
+    helper = e.ant.orig
+
+    f = e.face
+    # cria uma nova face
+    new_face = Face(len(p.faces), None)
+    # cria a diagonal e sua twin
+    diagonal = Edge(len(p.edges)+1, v, helper, f)
+    twin = Edge(len(p.edges)+2, helper, v, new_face)
+    
+    # a proxima da diagonal, tem a mesma face que a aresta do helper 
+    # a anterior também
+    diagonal.prox = e.ant
+    diagonal.ant  = e
+    # a twin da diagonal recebe a nova face
+    twin.prox = e.prox
+    twin.ant  = e.ant.ant
+
+
+    e.ant.ant.prox = twin
+    e.ant.ant = diagonal
+    e.prox.ant = twin
+    e.prox = diagonal
+    
+    # a nova face é a face associada à 'twin' da nova diagonal
+    new_face.inner = twin
+
+    diagonal.twin = twin
+    twin.twin = diagonal
+
+    # atualiza as faces que as arestas adicionadas apontam
+    diagonal.face = f
+    diagonal.prox.face = f
+    diagonal.ant.face  = f
+    # para as semi-arestas correspondentes também
+    twin.face = new_face
+    twin.prox.face = new_face
+    twin.ant.face  = new_face
+
+    p.edges.append(diagonal)
+    p.edges.append(twin)
+    p.faces.append(new_face)
 
 #-----------------------------------------------#
 # Insere uma diagonal do vertice ao helper em D
@@ -402,12 +414,13 @@ def triangulate(p):
 # Saída: insere a aresta formada pelos dois vertices
 #        em D
 #-----------------------------------------------#
+#def insere_diagonal(p, v.edge.ant, helper.edge)
 def insere_diagonal(p, v, helper):
-    
-    diag_prox = p.edges[helper.edge.id - 1]
-    diag_ant  = p.edges[v.edge.ant.id - 1]
-    twin_prox = p.edges[v.edge.id - 1]
-    twin_ant  = p.edges[helper.edge.ant.id - 1]
+
+    diag_prox = helper.edge #e_helper
+    diag_ant  = v.edge.ant 
+    twin_prox = v.edge #e
+    twin_ant  = helper.edge.ant
 
     # cria uma nova face
     new_face = Face(len(p.faces), None)
@@ -416,21 +429,22 @@ def insere_diagonal(p, v, helper):
     twin = Edge(len(p.edges)+2, helper, v, new_face)
     
     # a proxima da diagonal, tem a mesma face que a aresta do helper 
-    diagonal.prox = diag_prox
-    diag_prox.ant = diagonal
-    # a nova face é a face associada à 'twin' da nova diagonal
-    new_face.inner = twin
-    twin_prox.face.inner = diagonal
+    diagonal.prox = diag_prox #e_helper
+    diag_prox.ant = diagonal #e_helper.ant = diagonal
 
     # a anterior também
-    diagonal.ant  = diag_ant
-    diag_ant.prox = diagonal
+    diagonal.ant  = diag_ant #diagonal.ant = e.ant
+    diag_ant.prox = diagonal # 
 
     # a twin da diagonal recebe a nova face
     twin.prox = twin_prox
     twin_prox.ant = twin
     twin.ant  = twin_ant
     twin_ant.prox = twin
+
+    # a nova face é a face associada à 'twin' da nova diagonal
+    new_face.inner = twin
+    twin_prox.face.inner = diagonal
 
     diagonal.twin = twin
     twin.twin = diagonal
@@ -485,6 +499,7 @@ def distancia(e, v):
     num = (e.v2.y - e.v1.y)*v.x - (e.v2.x - e.v1.x)*v.y + e.v2.x * e.v1.y - e.v2.y * e.v1.x
     denom = sqrt( (e.v2.y - e.v1.y)**2 + (e.v2.x - e.v1.x)**2 )
     if denom == 0:
+        print "divisao por 0"
         return False
     else:
         return  num / denom
