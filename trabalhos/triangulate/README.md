@@ -20,6 +20,7 @@ A saída contém a entrada de dados, mais o número de triangulos que o
 polígono dado pelos vértices da entrada possui, mais os vértices de 
 cada triangulo, seguido das faces contrárias de cada vértice, onde
 0 é a face externa.
+
 ## Exemplo
 4<br />
 1 4<br />
