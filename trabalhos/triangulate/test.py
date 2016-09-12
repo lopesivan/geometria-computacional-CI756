@@ -11,9 +11,9 @@ vertices = []
 #        if y == vertices[i-1].y:
 #            y = y - 0.1
 #    vertices.append(Ponto(i+1,x,y))
-vertices.append(Ponto(1, 1, 10))
-vertices.append(Ponto(2, 1, 5))
-vertices.append(Ponto(3, 5, 5))
+vertices.append(Ponto(1, 1, 4))
+vertices.append(Ponto(2, 1, 20))
+vertices.append(Ponto(3, 15, 5))
 vertices.append(Ponto(4, 5, 10))
 
 

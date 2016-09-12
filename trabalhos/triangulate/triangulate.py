@@ -42,9 +42,12 @@ def main():
 
     #------------------------------------------------
     # monotone_decomposition():
+    #   executa apenas se o polígono tiver mais de 4 
+    #   vértices.
     #   tempo para dividir o poligono em sub-poligonos
     #   monotônicos é O(n log n).
-    monotone_decomposition(poligono)
+    if len(vertices) > 4:
+        monotone_decomposition(poligono)
 
     #------------------------------------------------
     # triangulate(): 
