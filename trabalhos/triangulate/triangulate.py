@@ -1,3 +1,4 @@
+# coding=UTF-8
 import sys
 import Geometria
 from Geometria import *
@@ -7,10 +8,20 @@ from Geometria import *
 #-----------------------------------------------#
 def get_data():
     num_pontos = int(raw_input())
+    vertices = []
     for i in xrange(num_pontos):
-        x, y = map(int, raw_input().split())
-        vertices.append(Vertice(x,y))
+        x, y = map(float, raw_input().split())
+        # "gira" o poligono para que não tenha pontos em um mesmo y
+        if i > 0:
+            if y == vertices[i-1].y:
+                y = y - 0.1
+        vertices.append(Ponto(i+1,x,y))
     return vertices
+
+def show_data(p):
+    print len(p.faces)-1
+    for i in xrange(1,len(p.faces)):
+        print p.faces[i].inner.orig.id, p.faces[i].inner.prox.orig.id, p.faces[i].inner.ant.orig.id,p.faces[i].inner.prox.twin.face.id, p.faces[i].inner.ant.twin.face.id, p.faces[i].inner.twin.face.id
 
 def main():
     # le da entrada
@@ -19,15 +30,16 @@ def main():
     # utiliza os vertices para formar um poligono
     poligono = Poligono(vertices)
 
-    # realiza a triangulacao
-    poligono.triangulate()
+    # divide o poligono em subpoligonos monotônicos
+    # O(n log n)
+    sweep(poligono)
+
+    # com o poligono dividido, realiza a triangulação
+    # O(n) ???
+    triangulate(poligono)
 
     # imprime o numero de triangulos que se formaram
-    print poligono.num_triangulos
-
-    # em seguida, imprime os triangulos
-    for i in xrange(poligono.num_triangulos):
-        print poligono.triangulo[i]
+    show_data(poligono)
 
     # encerra o programa
     return True

@@ -16,15 +16,15 @@ class Ponto(object):
         self.theta = None
 
     def __repr__(self):
-        return "%s (%s,%s) \'tipo\': \'%s\'" % (self.id, self.x, self.y, self.tipo)
-
+        return "%s (%s,%s)" % (self.id, self.x, self.y)
+        
 class Face(object):
     def __init__(self, id, inner, outer):
         self.id = id
         self.inner = inner
         self.outer = outer
     def __repr__(self):
-        return "%s in: %s out: %s" % (self.id, self.inner, self.outer)
+        return "%s - edge: %s" % (self.id, self.inner)
 
 class Edge(object):
     def __init__(self, id, v1, v2, face):
@@ -198,6 +198,14 @@ class Poligono(object):
 
         return True
 
+def angulo(e1, e2):
+    p2 = e1.v2
+    ref = e1.orig
+    p1 = e2.orig
+
+    x1, y1 = p1.x - ref.x, p1.y - ref.y
+    x2, y2 = p2.x - ref.x, p2.y - ref.y
+    return theta(x1,y1,x2,y2)
 #-----------------------------------------------#
 # Ordenação de vértices pela coordenada y, baseado
 # em quicksort
@@ -214,7 +222,7 @@ def quick_order_y(v, esq, dir):
                 v[j] = v[j-1]
                 j -= 1
             v[j] = aux
-            pivo += 1
+            pivo += 1               
     if pivo-1 >= esq:
         quick_order_y(v, esq, pivo-1)
     if pivo+1 <= dir:
@@ -321,6 +329,14 @@ def handle_vertex(p, v, status):
 def interior_dir(v):
     return True
 
+def triangulo(e):
+    v1 = e.prox.prox.v2.id
+    v2 = e.v1.id
+    if v1 == v2:
+        return True
+    else:
+        return False
+
 #-----------------------------------------------#
 # Calcula a triangulacao de um poligono
 # Entrada: self
@@ -328,31 +344,28 @@ def interior_dir(v):
 #        false caso nao exista
 #-----------------------------------------------#
 def triangulate(p):
+    # uma fila Q 
     Q = p.faces[1:]
 
-    #for i in xrange(1, len(p.faces)):
     while Q:
-        #print len(p.faces)
-        f = Q.pop(0)#p.faces[i]
+        f = Q.pop(0)
+        # 'e' é a aresta inicial da face 'f'
         e = f.inner
-        #e = inicio.prox
-        #print f.id, inicio.id
-        #while e != inicio:
-            #print e
-        v1 = e.prox.prox.twin.orig.id
-        v2 = e.orig.id
-        if v1 == v2:
-            print f.id, ' eh a face de um triangulo'
-            print e.orig.id, e.prox.orig.id, e.prox.prox.orig.id
-            #break
-        else:
-            print e.ant, e, e.prox
-            teste = e.prox
 
-            # cria uma nova face
-            new_face = Face(len(p.faces), None, None)
+        # caso não seja um triangulo, insere uma diagonal
+        if !triangulo(e):
+
+            # se o angulo formado entre os vertices for maior que 
+            # 180, significa que a diagonal ficará fora do poligono
+            # então troca até pegar uma ponta
+            while angulo(e, e.ant) >= 180:
+                e = e.ant
+                f.inner = e
+                
             v = e.prox.orig
             helper = e.ant.orig
+            # cria uma nova face
+            new_face = Face(len(p.faces), None, None)
             # cria a diagonal e sua twin
             diagonal = Edge(len(p.edges)+1, v, helper, f)
             twin = Edge(len(p.edges)+2, helper, v, new_face)
@@ -370,28 +383,28 @@ def triangulate(p):
             e.ant.ant = diagonal
             e.prox.ant = twin
             e.prox = diagonal
-            #e.prox.ant = twin
-            #e.ant.ant.prox = twin
+            
             # a nova face é a face associada à 'twin' da nova diagonal
             new_face.inner = twin
-            #diag_prox.face.inner = diagonal    
 
             diagonal.twin = twin
             twin.twin = diagonal
 
-
+            # atualiza as faces que as arestas adicionadas apontam
+            diagonal.face = f
+            diagonal.prox.face = f
+            diagonal.ant.face  = f
+            # para as semi-arestas correspondentes também
+            twin.face = new_face
+            twin.prox.face = new_face
+            twin.ant.face  = new_face
 
             p.edges.append(diagonal)
             p.edges.append(twin)
             p.faces.append(new_face)
 
-            
-            #p.edges[-1].prox = teste
-            #p.faces[-1].inner = p.edges[-1]
-            #e.prox = p.edges[-2]
+            # adiciona a nova face na fila
             Q.append(p.faces[-1])
-            #print p.edges[len(p.edges)-2], e
-            #e = e.prox
     return True
 
 
@@ -504,7 +517,7 @@ def cross_sign(x1, y1, x2, y2):
 def print_v(vertices):
     for v in vertices:
         print "     ", v, " 0: ", v.theta
-        print v.ant, " --- ", v.prox
+        #print v.ant, " --- ", v.prox
         print ""
 
 def print_s(arestas):
