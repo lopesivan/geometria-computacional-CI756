@@ -35,7 +35,9 @@ def main():
     sweep(poligono)
 
     # com o poligono dividido, realiza a triangulação
-    # O(n) ???
+    # O(n) uma vez que triangulate executa no máximo
+    # o número de triangulos que um poligono pode ter
+    # sendo assim, n-2 vezes
     triangulate(poligono)
 
     # imprime o numero de triangulos que se formaram
