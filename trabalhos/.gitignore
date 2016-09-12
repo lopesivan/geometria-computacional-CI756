@@ -1,3 +1,4 @@
 *.pyc
 *.txt
 *tar.gz
+triangulate/test.py
