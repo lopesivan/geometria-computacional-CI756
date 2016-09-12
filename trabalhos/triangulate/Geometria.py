@@ -86,32 +86,6 @@ class Edge(object):
             print "Se encontram em ", x_intersec
             return x_intersec
 
-    # a fazer: retorna o vertice logo acima da aresta
-    def origin(self):
-        return self.v1
-
-    def next(self):
-        return self.orig.edge
-
-
-    # a fazer: retorna o vertice logo abaixo da aresta
-    def helper_merge(self):
-        return True
-
-
-
-class Triangulo(object):
-    # no caso, recebe os indices dos vertices
-    def __init__(self, vertices):
-        self.vertices = []
-        for v in vertices:
-            self.vertices.append(v)
-
-    def __str__(self):
-        return "%s %s %s"%(self.vertices[0], self.vertices[1], self.vertices[2])
-
-
-
 
 class Poligono(object):
     def __init__(self, vertices):
@@ -127,7 +101,7 @@ class Poligono(object):
         self.faces.append(inner_face)
 
 
-        # forma o poligono na ordem em que foi dada na entrada
+        # forma o poligono na ordem anti horária
         for i in xrange(0, len(vertices)):
             # inicia os vertices
             self.vertices[i-1].prox = self.vertices[i]
@@ -171,18 +145,18 @@ class Poligono(object):
             x2, y2 = p2.x - ref.x, p2.y - ref.y
             ref.theta = theta(x1, y1, x2, y2)            
 
-    #-----------------------------------------------#
-    # Decompoe o poligono em poligonos monotonicos
-    # Entrada: poligono simples P
-    # Saida: uma divisao de P em poligono monotonico
-    #-----------------------------------------------#
 
 
-
-def angulo(e1, e2):
-    p2 = e1.v2
-    ref = e1.orig
-    p1 = e2.orig
+#-----------------------------------------------#
+# Função que retorna o angulo formado pela aresta 
+# e a aresta anterior
+# Entrada: uma aresta 'e'
+# Saida: o angulo formado por 'e' e 'e.ant'
+#-----------------------------------------------#
+def angulo(e):
+    p2 = e.v2
+    ref = e.orig
+    p1 = e.ant.orig
 
     x1, y1 = p1.x - ref.x, p1.y - ref.y
     x2, y2 = p2.x - ref.x, p2.y - ref.y
@@ -350,8 +324,8 @@ def triangulate(p):
 
             # se o angulo formado entre os vertices for maior que 
             # 180, significa que a diagonal ficará fora do poligono
-            # então troca até pegar uma ponta
-            while angulo(e, e.ant) >= 180:
+            # então troca até pegar uma 'ponta'
+            while angulo(e) >= 180:
                 e = e.ant
                 f.inner = e
             
@@ -371,7 +345,6 @@ def triangulate(p):
 def ear_clipping(p, e, e_helper):
     v = e.prox.orig
     helper = e.ant.orig
-
     f = e.face
     # cria uma nova face
     new_face = Face(len(p.faces), None)
@@ -467,14 +440,6 @@ def insere_diagonal(p, v, helper):
         e.face = new_face
         e = e.prox
     return True
-
-def monotone_piece(p, diagonal):
-
-    inicio = diagonal.v1
-    v = diagonal.v2
-    while v != inicio:
-        v = v.prox
-        return True
 
 #-----------------------------------------------#
 # Função para encontrar a aresta helper imediatamente
