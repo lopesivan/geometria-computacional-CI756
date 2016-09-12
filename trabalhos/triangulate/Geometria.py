@@ -129,11 +129,11 @@ class Poligono(object):
 
         # forma o poligono na ordem em que foi dada na entrada
         for i in xrange(0, len(vertices)):
-            # incia os vertices
+            # inicia os vertices
             self.vertices[i-1].prox = self.vertices[i]
             self.vertices[i].ant = vertices[i-1]
 
-            # inicia as arestas
+            # cria as arestas
             if i < len(vertices)-1:
                 e = Edge(i+1,vertices[i], vertices[i+1], inner_face)
                 e_twin = Edge(-(i+1), vertices[i+1], vertices[i], outer_face)
@@ -149,7 +149,7 @@ class Poligono(object):
                 self.vertices[i].edge = e
                 self.edges[i].twin = e_twin
 
-        # inicia a última aresta
+        # cria a última aresta
         e = Edge(len(vertices), vertices[len(vertices)-1], vertices[0], inner_face)
         e_twin = Edge(-len(vertices), vertices[0], vertices[len(vertices)-1], outer_face)
         self.edges.append(e)
@@ -157,32 +157,26 @@ class Poligono(object):
         self.edges[len(vertices)-1].twin = e_twin
 
         for i in xrange(0, len(vertices)):
+            # cria a doubly connected edge list
             self.edges[i-1].prox = self.edges[i]
             self.edges[i-1].twin.prox = self.edges[i].twin
             self.edges[i].ant = self.edges[i-1]
             self.edges[i].twin.ant = self.edges[i-1].twin
 
+            # calcula o angulo de cada vértice do polígono
             p2 = self.edges[i].twin.orig
             ref = self.edges[i].orig
             p1 = self.edges[i].ant.orig
-
             x1, y1 = p1.x - ref.x, p1.y - ref.y
             x2, y2 = p2.x - ref.x, p2.y - ref.y
             ref.theta = theta(x1, y1, x2, y2)            
+
     #-----------------------------------------------#
     # Decompoe o poligono em poligonos monotonicos
     # Entrada: poligono simples P
     # Saida: uma divisao de P em poligono monotonico
     #-----------------------------------------------#
-    def monotone_decomposition(self):
-        print "monotone_decomposition()"
-        print "..."
-        Q = self.vertices[:]
-        quick_order_y(Q, 0, len(Q)-1)
-        print_v(Q)
-        classify(Q)
-        print_v(Q)
-        return True
+
 
 
 def angulo(e1, e2):
@@ -219,7 +213,7 @@ def quick_order_y(v, esq, dir):
 #-----------------------------------------------#
 # Recebe dois vértices e retorna o angulo entre
 # angulo entre eles
-# Entrada:
+# Entrada: 
 # Saida:
 #-----------------------------------------------#
 def theta(x1, y1, x2, y2): # adaptar para receber um segmento
@@ -235,21 +229,22 @@ def theta(x1, y1, x2, y2): # adaptar para receber um segmento
 #-----------------------------------------------#
 # Função que implementa sweep line para dividir
 # o poligono em pedaços monotônicos
-# Entrada: um Poligono
-# Saída: uma subdivisão em D
+# Entrada: um Poligono p
+# Saída: p com arestas dividindo em sub-poligonos
+#        monotônicos
 #-----------------------------------------------#
-def sweep(p):
+def monotone_decomposition(p):
     status = []
     D = []
     Q = p.vertices[:]
     quick_order_y(Q, 0, len(Q)-1)
     while Q:
         v = Q.pop()
-        p.monotone.append(v)
         handle_vertex(p, v, status)
 
 #-----------------------------------------------#
-# Lida com cada tipo de vertice
+# Lida com cada tipo de vertice, tal como descrito
+# no livro do Berg et al.
 # Entrada: um vértice
 # Saída: a função apropriada para cada tipo de
 #        vértice
@@ -270,6 +265,8 @@ def handle_vertex(p, v, status):
 
     # vertice do tipo split
     if abaixo(v, v.ant) and abaixo(v, v.prox) and v.theta > 180:
+        # caso seja um split, insere uma aresta ligando o vertice
+        # e o helper anterior
         v.tipo = 'split'
         aresta = esquerda(status, v)
         insere_diagonal(p, v, aresta.helper)
@@ -294,11 +291,12 @@ def handle_vertex(p, v, status):
         # Caso o interior do poligono esteja para direita
         if interior_dir(v):
             # caso o helper da aresta for do tipo merge, insere uma diagonal em D
-            if p.edges[v.id-2].helper.tipo == 'merge':
-                insere_diagonal(p, v, p.edges[v.id-2].helper)
-            status.remove(p.edges[v.id-2])
-            p.edges[v.id-1].helper = v
-            status.append(p.edges[v.id-1])
+            if p.edges[v.id-2].helper != None:
+                if p.edges[v.id-2].helper.tipo == 'merge':
+                    insere_diagonal(p, v, p.edges[v.id-2].helper)
+                status.remove(p.edges[v.id-2])
+                p.edges[v.id-1].helper = v
+                status.append(p.edges[v.id-1])
         else:
             aresta = esquerda(status, v)
             # caso o helper da aresta for do tipo merge, insere uma diagonal em D
@@ -308,6 +306,7 @@ def handle_vertex(p, v, status):
     return
 
 #-----------------------------------------------#
+# !!!!!!!!!!!!! NOT IMPLEMENTED !!!!!!!!!!!!!!!!
 # Insere uma diagonal do vertice ao helper em D
 # Entrada: um vertice e o helper
 # Saída: insere a aresta formada pelos dois vertices
@@ -316,7 +315,14 @@ def handle_vertex(p, v, status):
 def interior_dir(v):
     return True
 
-def triangulo(e):
+#-----------------------------------------------#
+# Diz se a face é a face de um triangulo
+# Entrada: uma face do poligono
+# Saída: True se a face for um triangulo
+#        False caso contrário 
+#-----------------------------------------------#
+def triangulo(f):
+    e = f.inner
     v1 = e.prox.prox.v2.id
     v2 = e.v1.id
     if v1 == v2:
@@ -325,11 +331,10 @@ def triangulo(e):
         return False
 
 #-----------------------------------------------#
-# Insere diagonais para formar triangulos dentro 
-# do poligono
+# Insere diagonais no poligono monotônico para 
+# triangular
 # Entrada: poligono p
-# Saida: um poligono triangulado,
-#        false caso nao exista
+# Saida: um poligono triangulado
 #-----------------------------------------------#
 def triangulate(p):
     # uma fila Q 
@@ -339,10 +344,9 @@ def triangulate(p):
         f = Q.pop(0)
         # 'e' é a aresta inicial da face 'f'
         e = f.inner
-        v1 = e.prox.prox.v2.id
-        v2 = e.v1.id
+
         # caso não seja um triangulo, insere uma diagonal
-        if v1 != v2:
+        if not triangulo(f):
 
             # se o angulo formado entre os vertices for maior que 
             # 180, significa que a diagonal ficará fora do poligono
@@ -409,10 +413,10 @@ def ear_clipping(p, e, e_helper):
     p.faces.append(new_face)
 
 #-----------------------------------------------#
-# Insere uma diagonal do vertice ao helper em D
-# Entrada: um vertice e o helper
-# Saída: insere a aresta formada pelos dois vertices
-#        em D
+# Insere uma diagonal do vertice ao helper no poligono
+# Entrada: o poligono, um vertice e o helper
+# Saída: insere a aresta do vertice ao helper no 
+#        poligono
 #-----------------------------------------------#
 #def insere_diagonal(p, v.edge.ant, helper.edge)
 def insere_diagonal(p, v, helper):
@@ -454,18 +458,14 @@ def insere_diagonal(p, v, helper):
     p.faces.append(new_face)
 
     v.edge.ant = diagonal.twin
-    #print 'v.edge ', v.edge
     helper.edge = diagonal.twin
-    #print 'helper.edge ', helper.edge
 
+    # atualiza as arestas para apontarem para a nova face
     inicio = twin.v1
     e = twin.prox
     while e.v1 != inicio:
         e.face = new_face
         e = e.prox
-    #print diagonal, new_face
-    #print 'arestas de v',p.edges[v.id-1], p.edges[v.id-2]
-    #print 'arestas de helper',  p.edges[helper.id-1], p.edges[helper.id-2]
     return True
 
 def monotone_piece(p, diagonal):
@@ -477,7 +477,7 @@ def monotone_piece(p, diagonal):
         return True
 
 #-----------------------------------------------#
-# Função para encontrar a aresta imediatamente
+# Função para encontrar a aresta helper imediatamente
 # à esquerda do vertice v
 # Entrada: um lista, um vertice
 # Saída: a aresta à esquerda de v
@@ -504,36 +504,22 @@ def distancia(e, v):
     else:
         return  num / denom
 
+# o vertice 'q' está abaixo de 'p' caso a coord. y seja menor
+# ou se a coord. y for igual, usa a coord. x mais à direita 
 def abaixo(p, q):
-    if (q.y < p.y or (q.y == p.y and q.x > p.x) ):
+    if (q.y < p.y or (q.y == p.y and q.x < p.x) ):
         return True
     return False
 
+
+# o vertice 'q' está acima de 'p' caso a coord. y seja maior
+# ou se a coord. y for igual, usa a coord. x mais à direita
 def acima(p, q):
-    if (q.y > p.y) or (q.y == p.y and q.x < p.x):
+    if (q.y > p.y) or (q.y == p.y and q.x > p.x):
         return True
     return False
 
 def cross_sign(x1, y1, x2, y2):
     return x1 * y2 < x2 * y1
 
-def print_v(vertices):
-    for v in vertices:
-        print "     ", v, " 0: ", v.theta
-        #print v.ant, " --- ", v.prox
-        print ""
 
-def print_s(arestas):
-    for s in arestas:
-        print s, s.face.id, s.prox
-
-def print_f(faces):
-    for f in faces:
-        print 'face: ', f
-        inicio = f.inner
-        e = inicio.prox
-        while e != inicio:
-            print e
-            e = e.prox
-        #print f
-        #   print f.inner.prox

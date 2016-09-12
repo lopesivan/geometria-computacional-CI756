@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # coding=UTF-8
 import sys
 import Geometria
@@ -7,6 +8,7 @@ from Geometria import *
 # Lê dados do stdin como especificado
 #-----------------------------------------------#
 def get_data():
+    
     num_pontos = int(raw_input())
     vertices = []
     for i in xrange(num_pontos):
@@ -29,29 +31,31 @@ def show_data(p):
 def main():
     # le da entrada
     vertices = get_data()
-
+    if len(vertices) < 3:
+        print 'ao menos 3 vertices são necessários'
+        return False
     # utiliza os vertices para formar um poligono
     # O(n), uma vez que executa 2n operações
     poligono = Poligono(vertices)
 
-    # xunxo para fazer funcionar
-    # classifica os vertices e 
-    #poligono.classify()
 
-    # divide o poligono em subpoligonos monotônicos
-    # O(n log n), igual do livro
-    sweep(poligono)
 
-    # com o poligono dividido, realiza a triangulação
-    # O(n) uma vez que triangulate executa no máximo
-    # o número de triangulos que um poligono pode ter
-    # sendo assim, n-2 vezes
+    #------------------------------------------------
+    # monotone_decomposition():
+    #   tempo para dividir o poligono em sub-poligonos
+    #   monotônicos é O(n log n).
+    monotone_decomposition(poligono)
+
+    #------------------------------------------------
+    # triangulate(): 
+    #   tempo para dividir os sub-poligonos monotônicos 
+    #   é O(n).
+    # onde n é o número de vértices
     triangulate(poligono)
 
-    # imprime o numero de triangulos que se formaram
+    # imprime como especificado
     show_data(poligono)
 
-    # encerra o programa
     return True
 
 if __name__ == "__main__":
