@@ -19,10 +19,9 @@ class Ponto(object):
         return "%s (%s,%s)" % (self.id, self.x, self.y)
         
 class Face(object):
-    def __init__(self, id, inner, outer):
+    def __init__(self, id, inner):
         self.id = id
         self.inner = inner
-        self.outer = outer
     def __repr__(self):
         return "%s - edge: %s" % (self.id, self.inner)
 
@@ -122,8 +121,8 @@ class Poligono(object):
         self.edges = []
         self.vertices = vertices
         self.faces = []
-        outer_face = Face(0, None, None)
-        inner_face = Face(1, None, None)
+        outer_face = Face(0, None)
+        inner_face = Face(1, None)
         self.faces.append(outer_face)
         self.faces.append(inner_face)
 
@@ -162,6 +161,14 @@ class Poligono(object):
             self.edges[i-1].twin.prox = self.edges[i].twin
             self.edges[i].ant = self.edges[i-1]
             self.edges[i].twin.ant = self.edges[i-1].twin
+
+            p2 = self.edges[i].twin.orig
+            ref = self.edges[i].orig
+            p1 = self.edges[i].ant.orig
+
+            x1, y1 = p1.x - ref.x, p1.y - ref.y
+            x2, y2 = p2.x - ref.x, p2.y - ref.y
+            ref.theta = theta(x1, y1, x2, y2)            
     #-----------------------------------------------#
     # Decompoe o poligono em poligonos monotonicos
     # Entrada: poligono simples P
@@ -177,26 +184,6 @@ class Poligono(object):
         print_v(Q)
         return True
 
-
-    #-----------------------------------------------#
-    # Classifica os vertices em: start, split, merge,
-    # regular ou end.
-    # Entrada: uma lista de vertices
-    # Saida: uma classificação dos vertices
-    #-----------------------------------------------#
-    def classify(self):
-        #for i in xrange(0,len(self.vertices)):
-        for e in self.edges:
-            p2 = e.twin.orig
-            ref = e.orig
-            p1 = e.ant.orig
-
-            x1, y1 = p1.x - ref.x, p1.y - ref.y
-            x2, y2 = p2.x - ref.x, p2.y - ref.y
-            ref.theta = theta(x1, y1, x2, y2)
-
-
-        return True
 
 def angulo(e1, e2):
     p2 = e1.v2
@@ -351,9 +338,10 @@ def triangulate(p):
         f = Q.pop(0)
         # 'e' é a aresta inicial da face 'f'
         e = f.inner
-
+        v1 = e.prox.prox.v2.id
+        v2 = e.v1.id
         # caso não seja um triangulo, insere uma diagonal
-        if !triangulo(e):
+        if v1 != v2:
 
             # se o angulo formado entre os vertices for maior que 
             # 180, significa que a diagonal ficará fora do poligono
@@ -365,7 +353,7 @@ def triangulate(p):
             v = e.prox.orig
             helper = e.ant.orig
             # cria uma nova face
-            new_face = Face(len(p.faces), None, None)
+            new_face = Face(len(p.faces), None)
             # cria a diagonal e sua twin
             diagonal = Edge(len(p.edges)+1, v, helper, f)
             twin = Edge(len(p.edges)+2, helper, v, new_face)
@@ -422,7 +410,7 @@ def insere_diagonal(p, v, helper):
     twin_ant  = p.edges[helper.edge.ant.id - 1]
 
     # cria uma nova face
-    new_face = Face(len(p.faces), None, None)
+    new_face = Face(len(p.faces), None)
     # cria a diagonal e sua twin
     diagonal = Edge(len(p.edges)+1, v, helper, diag_prox.face)
     twin = Edge(len(p.edges)+2, helper, v, new_face)

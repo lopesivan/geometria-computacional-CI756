@@ -46,11 +46,11 @@ triangulate(p)
 #print_s(p.edges)
 #print '--------------------------------------'
 #print_f(p.faces)
-saida_formatada(p)
+#show_data(p)
 print len(p.faces)-1
 for i in xrange(1,len(p.faces)):
-    print p.faces[i].id, p.faces[i].inner.orig.id, p.faces[i].inner.prox.orig.id, p.faces[i].inner.ant.orig.id
-    print ' ',p.faces[i].inner.prox.twin.face.id, p.faces[i].inner.ant.twin.face.id, p.faces[i].inner.twin.face.id
+    print p.faces[i].inner.orig.id, p.faces[i].inner.prox.orig.id, p.faces[i].inner.ant.orig.id,p.faces[i].inner.prox.twin.face.id, p.faces[i].inner.ant.twin.face.id, p.faces[i].inner.twin.face.id
+
 #print p.faces
 #p.monotone_decomposition()
 #for e in p.edges:

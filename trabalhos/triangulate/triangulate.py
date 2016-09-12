@@ -30,6 +30,10 @@ def main():
     # utiliza os vertices para formar um poligono
     poligono = Poligono(vertices)
 
+    # xunxo para fazer funcionar
+    # classifica os vertices e 
+    #poligono.classify()
+
     # divide o poligono em subpoligonos monotônicos
     # O(n log n)
     sweep(poligono)
