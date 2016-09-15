@@ -33,12 +33,15 @@ class Edge(object):
         self.twin = None
         self.prox = None
         self.ant = None
+
+        # não faz parte da DCEL
         self.v1 = v1
         self.v2 = v2
         self.helper = None
 
     def __repr__(self):
         return "%s {%s, %s}" % (self.id, self.v1.id, self.v2.id)
+        
     #-----------------------------------------------#
     # Calcula a intersecção de dois segmentos
     # Entrada: um segmento
