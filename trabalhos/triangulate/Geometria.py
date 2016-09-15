@@ -190,7 +190,7 @@ def quick_order_y(v, esq, dir):
 # Entrada: 
 # Saida:
 #-----------------------------------------------#
-def theta(x1, y1, x2, y2): # adaptar para receber um segmento
+def theta(x1, y1, x2, y2):
     dot = (x1 * x2) + (y1 * y2)
     denom = sqrt((x1 ** 2 + y1 ** 2) * (x2 ** 2 + y2 ** 2))
     if x1 * y2 < x2 * y1:

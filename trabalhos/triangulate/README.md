@@ -37,11 +37,11 @@ cada triangulo, seguido das faces contrárias de cada vértice, onde
 # Bugs conhecidos
 1. Caso a entrada seja dada no sentido horário, no caso da entrada de exemplo 
   seria: <br /> 
-  4 <br />
-  1 4 <br />
-  1 20 <br />
-  15 20 <br />
-  15 4 <br />
+  >4 <br />
+  >1 4 <br />
+  >1 20 <br />
+  >15 20 <br />
+  >15 4 <br />
   Então o algoritmo se torna imprevisível.
 2. Foi testado com algumas instâncias, em alguns casos teve problema por causa 
   do número de vértices, o algoritmo que divide o polígono em sub-polígonos
