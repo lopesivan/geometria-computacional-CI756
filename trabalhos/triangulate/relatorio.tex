@@ -1,0 +1,143 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+
+\title{Trabalho 1 - Triangulação de polígono}
+\author{Gustavo Higuchi}
+\date{\today}
+
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{color}   %May be necessary if you want to color links
+\usepackage[portuguese, ruled, linesnumbered]{algorithm2e}
+\usepackage{inconsolata}
+
+\usepackage{mathtools}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+
+% usado para linkar cada section na tabela de conteúdo com a respectiva
+% página no documento
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black,
+    linktoc=all
+}
+
+%o começo do documento
+\begin{document}
+
+% compila o título
+\maketitle
+\newpage
+% compila a tabela de conteúdos
+\tableofcontents
+\newpage
+\section{Resumo}
+\hspace*{15pt}O problema escolhido para resolver foi a \textit{triangulação de polígonos} e a
+solução implementada foi dividir o polígono em sub-polígonos monotônicos e,
+em seguida, triangular esses subpolígonos, resultando numa triangulação do polígono
+original. O algoritmo foi implementado em \textit{Python}, utilizando uma abordagem
+que primeiro divide o polígono em polígonos \textit{y-monotone} para então
+triangular cada sub-polígono em tempo linear, o algoritmo roda em tempo $O(n\log n)$.
+
+\section{Introdução}
+\hspace*{15pt}Em geometria, uma triangulação é uma subdivisão de um objeto geométrico em
+\textit{simplexos} \cite{wikiTriang}. Neste trabalho é feito uma triangulação
+de polígonos simples de duas dimensões. Para resolver o problema foi utilizada
+a solução apresentada no livro \textit{Computational Geometry Algorithms and Applications}
+\cite{bergBook}. O algoritmo apresentado neste trabalho utiliza uma ordenação e
+por isso é limitado inferiormente a rodar em tempo $O(n \log n)$ e é descrito
+na secção 4.
+
+\section{Descrição do problema}
+\hspace*{15pt}O problema da triangulação de polígonos consiste em dividir um polígono com diagonais
+que formem um triangulo, sem que seja adicionado um novo vértice.
+Para um polígono de $n$ vértices, uma triangulação desse polígono teria exatamente
+$n-2$ triangulos.\\
+\\
+\hspace*{15pt}Para um polígono simples e não-convexo, basta ligar um vértices com todos os
+outros vértices exceto seus vizinhos, então teríamos uma triangulação em tempo
+linear com relação à entrada. Porém, em casos que o polígono é convexo, é preciso
+verificar se a diagonal inserida não está fora do polígono.\\
+\\
+
+\section{O algoritmo}
+\hspace*{15pt}O algoritmo neste trabalho utiliza uma abordagem para dividir o polígono simples
+em sub-polígonos \textit{y-monotônicos}, i.e. uma linha horizontal intersecta a
+fronteira da esquerda e a fronteira da direita, ou não intersecta nenhuma aresta
+do polígono. Isto é feito utilizando uma \textit{sweep line} que passa do vértice
+mais acima até o vértice mais abaixo, portanto é necessário organizar os vértices
+em uma fila de prioridades pela coordenada $y$, no caso de mesma coordenada $y$,
+o vértice mais a direita é usado como critério de prioridade. \\
+\hspace*{15pt}A estrutura de dados utilizada é a mesma que do livro da disciplina,
+\textit{Doubly Connneted Edge List} ou \textit{DCEL} e é descrita no livro de
+Berg et al. \cite{bergBook}, com algumas modificações específicas da implementação
+que fiz e é basicamente assim:
+\begin{enumerate}
+    \item Cada vértice possui apontadores para o próximo vértice e o anterior,
+    além de suas coordenadas e angulo inicial.
+    \item Cada face possui um apontador para uma aresta interna
+    \item Cada aresta possui um apontador para o vértice de origem, o vértice de
+          destino, o vértice helper (utilizado no algoritmo de divisão em sub-polígonos
+          y-monotônicos), a próxima aresta e a anterior, assim como um apontador para a
+          face que ela está e sua aresta \textit{gêmea} que é denominada de \textit{twin}.
+    \item O polígono possui uma lista de vértices, uma lista de arestas e uma lista de
+          faces.
+\end{enumerate}
+\hspace*{15pt}O algoritmo implementado é tal como aquele apresentado
+por Berg et al \cite{bergBook}, com a exceção de que a triangulação de polígonos
+y-monotônicos é feita diferente e será descrito em seguida.\\
+\hspace*{15pt}Depois de dividido, a triangulação dos sub-polígonos
+\textit{y-monotônico} é trivial e foi utilizado o algoritmo \textit{ear clipping},
+que insere uma diagnoal entre o início de uma aresta para o destino de outra aresta,
+caso o angulo formado pelas duas arestas for menor que $\pi$. O algoritmo
+\textit{triangulate} descrito abaixo descreve a implementação feita. \\
+\begin{algorithm}[H]
+  \SetAlgoLined
+  \Entrada{Um polígono $P$ subdividido em polígonos monotônicos}
+  \Saida{O polígono $P$ subdividido em triângulos}
+  \Inicio{
+  $Q\gets \text{lista de faces de P}$\\
+  \Para{cada elemento de Q}{
+    $f \gets \text{primeiro elemento de Q}$\\
+    $\text{remove o primeiro elemento de Q}$\\
+    \Se{\text{f não for um triangulo}   }{
+        $v_i \gets \text{destino da aresta inicial de f}$\\
+        $v_j \gets \text{origem da aresta anterior de $v_i$}$\\
+        $\text{$ear_clipping(P, v_i$, $v_j)$}$\\
+        $\text{insere em Q a face de }$\\
+    }
+    }
+  }
+  \label{alg1}
+  \caption{triangulate}
+\end{algorithm}
+\hspace*{15pt}A função \texttt{ear\_clipping()} insere uma diagonal entre dois
+vértices $v_i$ e $v_j$, apenas uma manipulação de ponteiros da aresta anterior
+e posterior dos dois vértices, executando em tempo constante. A inserção dessa
+diagonal divide o polígono em dois sub-polígonos, criando uma face nova. Essa face
+aponta para a aresta \textit{gêmea} como sendo sua aresta incial.
+\\
+\subsection{Complexidade e corretude}
+\hspace*{15pt}A construção da fila de prioridades é feita com uma ordenação
+baseada em quick sort, então executa em tempo $O(n \log n)$, e a triangulação
+do poligono é feita em tempo linear, levando em conta que o laço da linha 3
+executa no máximo o número de triangulos que o polígono pode possuir, ou seja
+$n-2$ vezes. Assim o algoritmo inteiro ficaria limitado em tempo $O(n \log n)$.
+\\
+\\
+\hspace*{15pt}A cada iteração do laço, uma face de $Q$ é removida, e
+caso a face não seja um triangulo, transforma a face em um triangulo e insere uma
+nova face em $Q$, então o algoritmo para quando houver apenas triangulos em $Q$.
+\newpage
+\bibliography{geometria}
+\bibliographystyle{ieeetr}
+
+\end{document}
