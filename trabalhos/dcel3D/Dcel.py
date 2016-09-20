@@ -38,7 +38,7 @@ class Edge(object):
         self.helper = None
 
     def __repr__(self):
-        return "%s %s" % (self.v1, self.v2)
+        return "%s %s %s" % (self.id, self.v1.id, self.v2.id)
 
 class Poliedro(object):
     def __init__(self, id, vertices, faces):
@@ -49,21 +49,13 @@ class Poliedro(object):
 
         for i in xrange(len(faces)):
             f = faces[i]
-            start_edge = len(self.edges)/2
-            num_vertices = len(f.vertices)
-            #e = Edge(start_edge+1, vertices[f.vertices[0]-1], vertices[f.vertices[-1]-1], f)
-            #e_twin = Edge(start_edge+2, vertices[f.vertices[-1]-1], vertices[f.vertices[0]-1], None)
-            #self.edges.append(e)
-            #self.edges.append(e_twin)
-            #create_edge(vertices[0],vertices[1])
-            for j in xrange(0, num_vertices):
-                # como que eu faço para 'twin' apontar para  a próxima face
-                # tentativa 1: busco na lista de arestas que já estão no
-                #              no polígono, para saber qual é uma aresta compatilhada
-                #              pelo vértice de origem e destino
-                #create_edge(i,vertices[i-1], vertices[j])
-                #print self.edges
-                e_shared = shared_edge(self.edges, vertices[f.vertices[j]-1], vertices[f.vertices[j-1]-1])
+            edges = []
+
+            for j in xrange(0, len(f.vertices)):
+                # busco na lista de arestas que já estão no
+                # no polígono, para saber qual é uma aresta compatilhada
+                # pelo vértice de origem e destino
+                e_shared = shared_edge(self.edges, vertices[f.vertices[j-1]-1], vertices[f.vertices[j]-1])
                 if e_shared:
                     # caso possua, a aresta simetrica recebe a face 'f'
                     # então checa se a twin possue uma face, se sim,
@@ -73,28 +65,31 @@ class Poliedro(object):
                         print "Erro! Aresta com mais de uma face!"
                         return False
 
+                    edges.append(e_shared.id)
                     e_shared.face = f
                     # e a primeira aresta da face é a aresta compartilhada
                     # caso não tenha sido inciada
                     if f.inner == None:
                         f.inner = e_shared
                 else:
-                    e = Edge(j+1, vertices[f.vertices[j]-1], vertices[f.vertices[j-1]-1], f)
-                    e_twin = Edge(j+2, vertices[f.vertices[j-1]-1], vertices[f.vertices[j]-1], None)
+                    e = Edge(len(self.edges)+1, vertices[f.vertices[j-1]-1], vertices[f.vertices[j]-1], f)
+                    e_twin = Edge(len(self.edges)+2, vertices[f.vertices[j]-1], vertices[f.vertices[j-1]-1], None)
+                    e.twin = e_twin
+                    e_twin.twin = e
                     self.edges.append(e)
+                    edges.append(e.id)
                     self.edges.append(e_twin)
 
-            
-            for j in xrange(start_edge, len(self.edges)):
-                self.edges[j-2].prev = self.edges[j]
-                self.edges[j].next   = self.edges[j-2]
+            for j in xrange(0, len(edges)):
+                self.edges[edges[j-1]-1].next = self.edges[edges[j]-1]
+                self.edges[edges[j]-1].prev   = self.edges[edges[j-1]-1]
 
-                 
             # a face recebe como a aresta interna a penúltima
             # aresta criada, para casos em que não tenha aresta
             # compartilhada
             if f.inner == None:
                 f.inner = self.edges[-2]
+
 
 
 
@@ -112,6 +107,8 @@ def shared_edge(edges, v1, v2):
     return False
 
 def show_data(p):
+    for f in p.faces:
+        print f.inner.id
     for e in p.edges:
-        print e
+        print e.orig, e.twin.id, e.face.id, e.next.id, e.prev.id
     return True
