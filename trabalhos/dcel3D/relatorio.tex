@@ -1,0 +1,118 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+
+\title{Trabalho 2 - DCEL 3D}
+\author{Gustavo Higuchi}
+\date{\today}
+
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{color}   %May be necessary if you want to color links
+\usepackage[portuguese, ruled, linesnumbered]{algorithm2e}
+\usepackage{inconsolata}
+
+\usepackage{mathtools}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+
+% usado para linkar cada section na tabela de conteúdo com a respectiva
+% página no documento
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black,
+    linktoc=all
+}
+
+%o começo do documento
+\begin{document}
+
+% compila o título
+\maketitle
+\newpage
+% compila a tabela de conteúdos
+\tableofcontents
+\newpage
+\section{Resumo}
+\hspace*{15pt}Sem muita complexidade, o algoritmo $dcel$ descrito neste documento
+gera a representação de um poliedro com a estrutura de dados DCEL.
+
+\section{Introdução}
+\hspace*{15pt}A estrutura de dados DCEL apresentada no livro
+\textit{Computational Geometry Algorithms and Applications} \cite{bergBook} é
+adaptada para representar um poliedro (figura 3D).
+
+\section{Descrição do problema}
+\hspace*{15pt}Implementar uma estrutura de dados DCEL (\textit{Doubly Connneted Edge List})
+para poliedros.
+
+\section{DCEL 3D}
+
+\hspace*{15pt}A estrutura de dados gerada é a mesma que do livro da disciplina,
+\textit{Doubly Connneted Edge List} ou \textit{DCEL} e é descrita no livro de
+Berg et al. \cite{bergBook}, porém para poliedros:
+\begin{enumerate}
+    \item Cada vértice possui sua coordenada e aponta para uma aresta.
+    \item Cada face possui um apontador para uma aresta interna
+    \item Cada aresta possui um apontador para o vértice de origem, a face esquerda,
+          a próxima aresta e a aresta anterior.
+    \item O poliedro possui uma lista de vértices, uma lista de arestas e uma lista de
+          faces.
+\end{enumerate}
+
+\hspace*{15pt} No algoritmo abaixo, a função $aresta\_compartilhada(v_{i-1}, v_i)$ procura
+uma semi-aresta que possui do vértice $v_{i-1}$ para o $v_i$.\\
+\\
+
+\begin{algorithm}[H]
+    \SetAlgoLined
+    \Entrada{um conjunto de vértice $V$, um conjunto de faces $F$, e os vértices de cada face $FV$ }
+    \Saida{O poliedro $P$}
+    \Inicio{
+    $Q\gets \text{lista de faces de P}$\\
+    \Para{\text{cada face $f$ em $F$}}{
+        \Para{cada vertice em $FV$}{
+            $e \gets aresta\_compartilhada(v_{i-1}, v_i)$\\
+            \Se{ \text{$e$ existir} }{
+                \Se{\text{possuir uma face esquerda definida}}{
+                    \Retorna $\text{não é orientável}$\\
+                }
+                $e.esquerda \gets f$\\
+            }
+            \Senao{
+                $\text{crio a semi-aresta e sua simétrica}$\\
+                $\text{adiciono ao poliedro}$\\
+            }
+        }
+        \Para{aresta da face}{
+            $\text{defino quem é proximo e anterior}$\\
+        }
+        \Se{$f$ ainda não possui uma aresta interna}{
+            $f.aresta \gets \text{última semi-aresta criada}$\\
+        }
+    }
+    }
+    \label{alg1}
+    \caption{dcel}
+\end{algorithm}
+
+\subsection{Corretude}
+\hspace*{15pt}Para gerar a estrutura, a função \textit{dcel} descrita acima,
+recebe os vértices, as faces e seus respectivos vértices. Assim, para cada
+face, sempre cria duas semi-arestas, a semi-aresta e sua simétrica, para cada
+par de vértices daquela face. Caso já exista uma semi-aresta com o par de vértice,
+não cria nenhuma semi-aresta. Após a criação de todas as semi-arestas da face,
+define a semi-aresta próxima e anterior para cada uma delas.
+\\
+\newpage
+
+\bibliography{relatorio}
+\bibliographystyle{ieeetr}
+
+\end{document}
