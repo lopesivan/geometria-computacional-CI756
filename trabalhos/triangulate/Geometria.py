@@ -17,7 +17,7 @@ class Ponto(object):
 
     def __repr__(self):
         return "%s (%s,%s)" % (self.id, self.x, self.y)
-        
+
 class Face(object):
     def __init__(self, id, inner):
         self.id = id
@@ -41,7 +41,7 @@ class Edge(object):
 
     def __repr__(self):
         return "%s {%s, %s}" % (self.id, self.v1.id, self.v2.id)
-        
+
     #-----------------------------------------------#
     # Calcula a intersecção de dois segmentos
     # Entrada: um segmento
@@ -92,17 +92,18 @@ class Edge(object):
 
 class Poligono(object):
     def __init__(self, vertices):
-        self.num_triangulos = None
-        self.triangulos = []
-        self.monotone = []
-        self.edges = []
+
         self.vertices = vertices
+        self.edges = []
         self.faces = []
+
+        # inicia a face interna e externa
         outer_face = Face(0, None)
         inner_face = Face(1, None)
+
+        # coloca na lista de faces do poligono
         self.faces.append(outer_face)
         self.faces.append(inner_face)
-
 
         # forma o poligono na ordem anti horária
         for i in xrange(0, len(vertices)):
@@ -128,13 +129,14 @@ class Poligono(object):
 
         # cria a última aresta
         e = Edge(len(vertices), vertices[len(vertices)-1], vertices[0], inner_face)
+        # e a última semi-aresta externa do polígono
         e_twin = Edge(-len(vertices), vertices[0], vertices[len(vertices)-1], outer_face)
         self.edges.append(e)
         self.vertices[len(vertices)-1].edge = e
         self.edges[len(vertices)-1].twin = e_twin
 
         for i in xrange(0, len(vertices)):
-            # cria a doubly connected edge list
+            # cria a dcel
             self.edges[i-1].prox = self.edges[i]
             self.edges[i-1].twin.prox = self.edges[i].twin
             self.edges[i].ant = self.edges[i-1]
@@ -146,12 +148,12 @@ class Poligono(object):
             p1 = self.edges[i].ant.orig
             x1, y1 = p1.x - ref.x, p1.y - ref.y
             x2, y2 = p2.x - ref.x, p2.y - ref.y
-            ref.theta = theta(x1, y1, x2, y2)            
+            ref.theta = theta(x1, y1, x2, y2)
 
 
 
 #-----------------------------------------------#
-# Função que retorna o angulo formado pela aresta 
+# Função que retorna o angulo formado pela aresta
 # e a aresta anterior
 # Entrada: uma aresta 'e'
 # Saida: o angulo formado por 'e' e 'e.ant'
@@ -180,7 +182,7 @@ def quick_order_y(v, esq, dir):
                 v[j] = v[j-1]
                 j -= 1
             v[j] = aux
-            pivo += 1               
+            pivo += 1
     if pivo-1 >= esq:
         quick_order_y(v, esq, pivo-1)
     if pivo+1 <= dir:
@@ -190,7 +192,7 @@ def quick_order_y(v, esq, dir):
 #-----------------------------------------------#
 # Recebe dois vértices e retorna o angulo entre
 # angulo entre eles
-# Entrada: 
+# Entrada:
 # Saida:
 #-----------------------------------------------#
 def theta(x1, y1, x2, y2):
@@ -228,20 +230,20 @@ def monotone_decomposition(p):
 #-----------------------------------------------#
 def handle_vertex(p, v, status):
     # vertice do tipo start
-    if abaixo(v, v.ant) and abaixo(v, v.prox) and v.theta < 180:
+    if abaixo(v, p.vertices[v.id-2]) and abaixo(v, p.vertices[v.id % len(p.vertices)]) and v.theta < 180:
         v.tipo = 'start'
         p.edges[v.id-1].helper = p.vertices[v.id-1]
         status.append(p.edges[v.id-1])
 
     # vertice do tipo end
-    if acima(v, v.ant) and acima(v, v.prox) and v.theta < 180:
+    if acima(v, p.vertices[v.id-2]) and acima(v, p.vertices[v.id % len(p.vertices)]) and v.theta < 180:
         v.tipo = 'end'
         if p.edges[v.id-2].helper.tipo == 'merge':
             insere_diagonal(p, v, p.edges[v.id-2].helper)
         status.remove(p.edges[v.id-2])
 
     # vertice do tipo split
-    if abaixo(v, v.ant) and abaixo(v, v.prox) and v.theta > 180:
+    if abaixo(v, p.vertices[v.id-2]) and abaixo(v, p.vertices[v.id % len(p.vertices)]) and v.theta > 180:
         # caso seja um split, insere uma aresta ligando o vertice
         # e o helper anterior
         v.tipo = 'split'
@@ -252,7 +254,7 @@ def handle_vertex(p, v, status):
         status.append(p.edges[v.id-1])
 
     # vertice do tipo merge
-    if acima(v, v.ant) and acima(v, v.prox) and v.theta > 180:
+    if acima(v, p.vertices[v.id-2]) and acima(v, p.vertices[v.id % len(p.vertices)]) and v.theta > 180:
         v.tipo = 'merge'
         if p.edges[v.id-2].helper.tipo == 'merge':
             insere_diagonal(p, v, p.edges[v.id-2].helper)
@@ -263,7 +265,7 @@ def handle_vertex(p, v, status):
         aresta.helper = v
 
     # vertice normal
-    if (abaixo(v, v.ant) and acima(v, v.prox)) or (abaixo(v, v.prox) and acima(v, v.ant)):
+    if (abaixo(v, p.vertices[v.id-2]) and acima(v, p.vertices[v.id % len(p.vertices)])) or (abaixo(v, p.vertices[v.id % len(p.vertices)]) and acima(v, p.vertices[v.id-2])):
         v.tipo = 'regular'
         # Caso o interior do poligono esteja para direita
         if interior_dir(v):
@@ -296,7 +298,7 @@ def interior_dir(v):
 # Diz se a face é a face de um triangulo
 # Entrada: uma face do poligono
 # Saída: True se a face for um triangulo
-#        False caso contrário 
+#        False caso contrário
 #-----------------------------------------------#
 def triangulo(f):
     e = f.inner
@@ -308,13 +310,13 @@ def triangulo(f):
         return False
 
 #-----------------------------------------------#
-# Insere diagonais no poligono monotônico para 
+# Insere diagonais no poligono monotônico para
 # triangular
 # Entrada: poligono p
 # Saida: um poligono triangulado
 #-----------------------------------------------#
 def triangulate(p):
-    # uma fila Q 
+    # uma fila Q
     Q = p.faces[1:]
 
     while Q:
@@ -325,13 +327,13 @@ def triangulate(p):
         # caso não seja um triangulo, insere uma diagonal
         if not triangulo(f):
 
-            # se o angulo formado entre os vertices for maior que 
+            # se o angulo formado entre os vertices for maior que
             # 180, significa que a diagonal ficará fora do poligono
             # então troca até pegar uma 'ponta'
             while angulo(e) >= 180:
                 e = e.ant
                 f.inner = e
-            
+
             # insere uma diagonal para fechar um triangulo
             ear_clipping(p, e, e.ant)
 
@@ -340,9 +342,9 @@ def triangulate(p):
     return True
 
 #-----------------------------------------------#
-# Insere uma diagonal que forma um triangulo, 
+# Insere uma diagonal que forma um triangulo,
 # parecido com insere_diagonal()
-# Entrada: o poligono e a aresta inicial da face  
+# Entrada: o poligono e a aresta inicial da face
 # Saída: o poligono dividido em dois
 #-----------------------------------------------#
 def ear_clipping(p, e, e_helper):
@@ -354,8 +356,8 @@ def ear_clipping(p, e, e_helper):
     # cria a diagonal e sua twin
     diagonal = Edge(len(p.edges)+1, v, helper, f)
     twin = Edge(len(p.edges)+2, helper, v, new_face)
-    
-    # a proxima da diagonal, tem a mesma face que a aresta do helper 
+
+    # a proxima da diagonal, tem a mesma face que a aresta do helper
     # a anterior também
     diagonal.prox = e.ant
     diagonal.ant  = e
@@ -368,7 +370,7 @@ def ear_clipping(p, e, e_helper):
     e.ant.ant = diagonal
     e.prox.ant = twin
     e.prox = diagonal
-    
+
     # a nova face é a face associada à 'twin' da nova diagonal
     new_face.inner = twin
 
@@ -391,14 +393,14 @@ def ear_clipping(p, e, e_helper):
 #-----------------------------------------------#
 # Insere uma diagonal do vertice ao helper no poligono
 # Entrada: o poligono, um vertice e o helper
-# Saída: insere a aresta do vertice ao helper no 
+# Saída: insere a aresta do vertice ao helper no
 #        poligono
 #-----------------------------------------------#
 #def insere_diagonal(p, v.edge.ant, helper.edge)
 def insere_diagonal(p, v, helper):
 
     diag_prox = helper.edge #e_helper
-    diag_ant  = v.edge.ant 
+    diag_ant  = v.edge.ant
     twin_prox = v.edge #e
     twin_ant  = helper.edge.ant
 
@@ -407,14 +409,14 @@ def insere_diagonal(p, v, helper):
     # cria a diagonal e sua twin
     diagonal = Edge(len(p.edges)+1, v, helper, diag_prox.face)
     twin = Edge(len(p.edges)+2, helper, v, new_face)
-    
-    # a proxima da diagonal, tem a mesma face que a aresta do helper 
+
+    # a proxima da diagonal, tem a mesma face que a aresta do helper
     diagonal.prox = diag_prox #e_helper
     diag_prox.ant = diagonal #e_helper.ant = diagonal
 
     # a anterior também
     diagonal.ant  = diag_ant #diagonal.ant = e.ant
-    diag_ant.prox = diagonal # 
+    diag_ant.prox = diagonal #
 
     # a twin da diagonal recebe a nova face
     twin.prox = twin_prox
@@ -473,7 +475,7 @@ def distancia(e, v):
         return  num / denom
 
 # o vertice 'q' está abaixo de 'p' caso a coord. y seja menor
-# ou se a coord. y for igual, usa a coord. x mais à direita 
+# ou se a coord. y for igual, usa a coord. x mais à direita
 def abaixo(p, q):
     if (q.y < p.y or (q.y == p.y and q.x < p.x) ):
         return True
@@ -489,5 +491,3 @@ def acima(p, q):
 
 def cross_sign(x1, y1, x2, y2):
     return x1 * y2 < x2 * y1
-
-
