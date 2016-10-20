@@ -253,10 +253,9 @@ def handle_vertex(p, v, status):
     # vertice do tipo merge
     if acima(v, p.vertices[v.id-2]) and acima(v, p.vertices[v.id % len(p.vertices)]) and v.theta > 180:
         v.tipo = 'merge'
-        arestaEsq = esquerda(status, v)
-        if arestaEsq.helper.tipo == 'merge':
+        if v.edge.ant.helper and v.edge.ant.helper.tipo  == 'merge':
             insere_diagonal(p, v, v.edge.ant.helper)
-        status.remove(v.edge.ant)
+        status.remove(p.edges[v.id-2])
         aresta = esquerda(status, v)
         if aresta.helper.tipo == 'merge':
             insere_diagonal(p, v, aresta.helper)
@@ -268,12 +267,12 @@ def handle_vertex(p, v, status):
         # Caso o interior do poligono esteja para direita
         if interior_dir(v):
             # caso o helper da aresta for do tipo merge, insere uma diagonal em D
-            if v.edge.ant.helper != None:
-                if v.edge.ant.helper.tipo == 'merge':
-                    insere_diagonal(p, v, v.edge.ant.helper)
-                if v.edge.ant in status: status.remove(v.edge.ant)
-                v.edge.helper = v
-                status.append(v.edge)
+            if v.edge.ant.helper.tipo == 'merge':
+                insere_diagonal(p, v, v.edge.ant.helper)
+            if p.edges[v.id-2] in status: 
+                status.remove(p.edges[v.id-2])
+            v.edge.helper = v
+            status.append(v.edge)
         else:
             aresta = esquerda(status, v)
             # caso o helper da aresta for do tipo merge, insere uma diagonal em D
@@ -290,7 +289,7 @@ def handle_vertex(p, v, status):
 #        em D
 #-----------------------------------------------#
 def interior_dir(v):
-    if v.edge.v2.id > v.id:
+    if v.edge.v2.y > v.y:
         return False
     return True
 
@@ -401,7 +400,7 @@ def ear_clipping(p, e, e_helper):
 #-----------------------------------------------#
 #def insere_diagonal(p, v.edge.ant, helper.edge)
 def insere_diagonal(p, v, helper):
-
+    print  v, helper
     diag_prox = helper.edge #e_helper
     diag_ant  = v.edge.ant
     twin_prox = v.edge #e
@@ -456,11 +455,11 @@ def insere_diagonal(p, v, helper):
 # Saída: a aresta à esquerda de v
 #-----------------------------------------------#
 def esquerda(status, v):
-    menor = 1000000
+    menor = -1000000
     ej = None
     for e in status:
         d = distancia(e, v)
-        if d < menor:
+        if d!= 0 and d > menor:
             menor = d
             ej = e
     return ej
