@@ -8,10 +8,8 @@ class Ponto(object):
         self.id = id
         self.x = x
         self.y = y
-
-        self.prox = None
-        self.ant = None
         self.edge = None
+
         self.tipo = None
         self.theta = None
 
@@ -107,22 +105,21 @@ class Poligono(object):
 
         # forma o poligono na ordem anti horária
         for i in xrange(0, len(vertices)):
-            # inicia os vertices
-            self.vertices[i-1].prox = self.vertices[i]
-            self.vertices[i].ant = vertices[i-1]
 
             # cria as arestas
             if i < len(vertices)-1:
                 e = Edge(i+1,vertices[i], vertices[i+1], inner_face)
                 e_twin = Edge(-(i+1), vertices[i+1], vertices[i], outer_face)
 
-                # inicia as faces
+                # face apota para primeira aresta criada
                 if self.faces[1].inner == None:
                     self.faces[1].inner = e
+                # a face externa aponta para a twin dela
                 if self.faces[0].inner == None:
                     self.faces[0].inner = e_twin
 
                 # insere a nova aresta na estrutura do poligono
+                # não adiciono a semi-aresta externa
                 self.edges.append(e)
                 self.vertices[i].edge = e
                 self.edges[i].twin = e_twin
@@ -232,15 +229,15 @@ def handle_vertex(p, v, status):
     # vertice do tipo start
     if abaixo(v, p.vertices[v.id-2]) and abaixo(v, p.vertices[v.id % len(p.vertices)]) and v.theta < 180:
         v.tipo = 'start'
-        p.edges[v.id-1].helper = p.vertices[v.id-1]
-        status.append(p.edges[v.id-1])
+        v.edge.helper = p.vertices[v.id-1]
+        status.append(v.edge)
 
     # vertice do tipo end
     if acima(v, p.vertices[v.id-2]) and acima(v, p.vertices[v.id % len(p.vertices)]) and v.theta < 180:
         v.tipo = 'end'
-        if p.edges[v.id-2].helper.tipo == 'merge':
-            insere_diagonal(p, v, p.edges[v.id-2].helper)
-        status.remove(p.edges[v.id-2])
+        if v.edge.ant.helper.tipo == 'merge':
+            insere_diagonal(p, v, v.edge.ant.helper)
+        if v.edge.ant in status: status.remove(v.edge.ant)
 
     # vertice do tipo split
     if abaixo(v, p.vertices[v.id-2]) and abaixo(v, p.vertices[v.id % len(p.vertices)]) and v.theta > 180:
@@ -250,15 +247,16 @@ def handle_vertex(p, v, status):
         aresta = esquerda(status, v)
         insere_diagonal(p, v, aresta.helper)
         aresta.helper = v
-        p.edges[v.id-1].helper = v
-        status.append(p.edges[v.id-1])
+        v.edge.helper = v
+        status.append(v.edge)
 
     # vertice do tipo merge
     if acima(v, p.vertices[v.id-2]) and acima(v, p.vertices[v.id % len(p.vertices)]) and v.theta > 180:
         v.tipo = 'merge'
-        if p.edges[v.id-2].helper.tipo == 'merge':
-            insere_diagonal(p, v, p.edges[v.id-2].helper)
-        status.remove(p.edges[v.id-2])
+        arestaEsq = esquerda(status, v)
+        if arestaEsq.helper.tipo == 'merge':
+            insere_diagonal(p, v, v.edge.ant.helper)
+        status.remove(v.edge.ant)
         aresta = esquerda(status, v)
         if aresta.helper.tipo == 'merge':
             insere_diagonal(p, v, aresta.helper)
@@ -270,17 +268,17 @@ def handle_vertex(p, v, status):
         # Caso o interior do poligono esteja para direita
         if interior_dir(v):
             # caso o helper da aresta for do tipo merge, insere uma diagonal em D
-            if p.edges[v.id-2].helper != None:
-                if p.edges[v.id-2].helper.tipo == 'merge':
-                    insere_diagonal(p, v, p.edges[v.id-2].helper)
-                status.remove(p.edges[v.id-2])
-                p.edges[v.id-1].helper = v
-                status.append(p.edges[v.id-1])
+            if v.edge.ant.helper != None:
+                if v.edge.ant.helper.tipo == 'merge':
+                    insere_diagonal(p, v, v.edge.ant.helper)
+                if v.edge.ant in status: status.remove(v.edge.ant)
+                v.edge.helper = v
+                status.append(v.edge)
         else:
             aresta = esquerda(status, v)
             # caso o helper da aresta for do tipo merge, insere uma diagonal em D
             if aresta.helper.tipo == 'merge':
-                insere_diagonal(p, v, p.edges[v.id-1].helper)
+                insere_diagonal(p, v, aresta.helper)
             aresta.helper = v
     return
 
@@ -292,6 +290,8 @@ def handle_vertex(p, v, status):
 #        em D
 #-----------------------------------------------#
 def interior_dir(v):
+    if v.edge.v2.id > v.id:
+        return False
     return True
 
 #-----------------------------------------------#
@@ -340,6 +340,9 @@ def triangulate(p):
             # adiciona a nova face na fila
             Q.append(p.faces[-1])
     return True
+    
+#def triangulate_monotone(p):
+
 
 #-----------------------------------------------#
 # Insere uma diagonal que forma um triangulo,
