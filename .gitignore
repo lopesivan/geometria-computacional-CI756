@@ -1,2 +1,10 @@
 *.pyc
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.pdf
+*.toc
+
 documentos/
