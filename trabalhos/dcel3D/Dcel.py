@@ -122,7 +122,7 @@ def show_data(p, vertices):
     for v in p.vertices:
         print v.x, v.y, v.z, v.edge.id
     for vertex in vertices:
-        print ' '.join(str(v) for v in vertex   )
+        print ' '.join( str(v) for v in vertex )
     for f in p.faces:
         print f.inner.id
     for e in p.edges:

@@ -282,7 +282,6 @@ def handle_vertex(p, v, status):
     return
 
 #-----------------------------------------------#
-# !!!!!!!!!!!!! NOT IMPLEMENTED !!!!!!!!!!!!!!!!
 # Insere uma diagonal do vertice ao helper em D
 # Entrada: um vertice e o helper
 # Saída: insere a aresta formada pelos dois vertices
