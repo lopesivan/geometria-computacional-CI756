@@ -63,6 +63,9 @@ def query2DRangeTree( node, x, x1, y, y1 ):
             y < v_split.point.y and v_split.point.y < y1):
                 response.append( v_split )
     else:
+        if (x < v_split.point.x and v_split.point.x < x1 and 
+            y < v_split.point.y and v_split.point.y < y1):
+                response.append( v_split )        
         v = v_split.left
         while not leaf( v ):
             if x <= v.point.x:
@@ -71,9 +74,9 @@ def query2DRangeTree( node, x, x1, y, y1 ):
             else:
                 v = v.right
         if v:
-            if (x < v_split.point.x and v_split.point.x < x1 and
-                y < v_split.point.y and v_split.point.y < y1):
-                response.append( v_split )
+            if (x < v.point.x and v.point.x < x1 and
+                y < v.point.y and v.point.y < y1):
+                response.append( v )
 
         v = v_split.right
         while not leaf( v ):
@@ -97,6 +100,8 @@ def query1DRangeTree( node, x, x1 ):
         if x <= v_split.key and v_split.key <= x1: 
             response.append( v_split )
     else:
+        if x <= v_split.key and v_split.key <= x1: 
+            response.append( v_split )        
         #--------------------------------------------#
         # percorre a subárvore à esquerda do nó split
         # e reporta todos os pontos à direita.
