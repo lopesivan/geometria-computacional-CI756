@@ -10,9 +10,10 @@ x.append(Point(10,4))
 x.append(Point(5,2))
 x.append(Point(3,5))
 
+y = sorted(x, key=getKey)
 
-arv = RangeTree(x)
+#arv = RangeTree(x)
 
-r = query2DRangeTree(arv, 5, 9, 5, 9)
-print r
+#r = query2DRangeTree(arv, 2, 7, 2, 7)
+#print r
 #imprime_arv(arv)

@@ -8,6 +8,9 @@ class Point(object):
     def __repr__(self):
         return "(%s,%s)" % (self.x, self.y)
 
+def getKey(point):
+    return point.x
+
 class Segment(object):
     def __init__(self, x1, y1, x2, y2):
         self.x1 = x1
@@ -23,15 +26,15 @@ class Window(object):
         self.y2 = y2
 
 def RangeTree(P):
-    T = ArvBinBusca( P, 0 )
+    T = ArvBinBusca(P, 0)
     if len(P) == 0:
-        return 
+        return
     if len(P) == 1:
-        v = Node( P[0].x, P[0] )
-        v.tree_assoc = T.root 
+        v = Node(P[0].x, P[0])
+        v.tree_assoc = T.root
     else:
         #--------------------------------------------#
-        # Divide o conjunto de pontos com base na 
+        # Divide o conjunto de pontos com base na
         # mediana da coordenada x em duas listas, esquerda
         # e direita, onde pontos com coordenada menor
         # que x_mid na esquerda, e maiores à direita
@@ -39,15 +42,15 @@ def RangeTree(P):
         # guarda o nó do meio, no caso, o maior da lista
         # da esquerda
         x_mid = left.pop(getRootIndex(left))
-        
+
         v_left = RangeTree(left)
         v_right = RangeTree(right)
-        v = Node( x_mid.x, x_mid )
+        v = Node(x_mid.x, x_mid)
         v.left = v_left
         v.right = v_right
 
         # guarda a raiz da árvore balanceada associada
-        # no nó do meio  
+        # no nó do meio
         v.tree_assoc = T.root
         #--------------------------------------------#
 
@@ -55,88 +58,91 @@ def RangeTree(P):
 
     return v
 
-def query2DRangeTree( node, x, x1, y, y1 ):
+def query2DRangeTree(node, x, x1, y, y1):
     response = []
-    v_split = findSplitNode( node, x, x1 )
-    if leaf( v_split ):
-        if (x < v_split.point.x and v_split.point.x < x1 and 
-            y < v_split.point.y and v_split.point.y < y1):
-                response.append( v_split )
+    v_split = findSplitNode(node, x, x1)
+    if leaf(v_split):
+        if (x < v_split.point.x and v_split.point.x < x1 and
+                y < v_split.point.y and v_split.point.y < y1):
+            response.append(v_split)
     else:
-        if (x < v_split.point.x and v_split.point.x < x1 and 
-            y < v_split.point.y and v_split.point.y < y1):
-                response.append( v_split )        
+        if (x < v_split.point.x and v_split.point.x < x1 and
+                y < v_split.point.y and v_split.point.y < y1):
+            response.append(v_split)
         v = v_split.left
-        while not leaf( v ):
+        while not leaf(v):
             if x <= v.point.x:
-                response.extend(query1DRangeTree( v.tree_assoc, y, y1 ))
+                response.extend(query1DRangeTree(v.tree_assoc, y, y1))
                 v = v.left
             else:
                 v = v.right
         if v:
             if (x < v.point.x and v.point.x < x1 and
-                y < v.point.y and v.point.y < y1):
-                response.append( v )
+                    y < v.point.y and v.point.y < y1):
+                response.append(v)
 
         v = v_split.right
-        while not leaf( v ):
+        while not leaf(v):
             if v.point.x <= x1:
-                response.extend(query1DRangeTree( v.tree_assoc, y, y1 ))
+                response.extend(query1DRangeTree(v.tree_assoc, y, y1))
                 v = v.right
             else:
                 v = v.left
         if v:
             if (x < v.point.x and v.point.x < x1 and
-                y < v.point.y and v.point.y < y1):
-                response.append( v_split )
+                    y < v.point.y and v.point.y < y1):
+                response.append(v)
 
     return response
 
 
-def query1DRangeTree( node, x, x1 ):
+def query1DRangeTree(node, x, x1):
     response = []
-    v_split =  findSplitNode(node, x, x1)
-    if leaf( v_split ):
-        if x <= v_split.key and v_split.key <= x1: 
-            response.append( v_split )
+    v_split = findSplitNode(node, x, x1)
+    if leaf(v_split):
+        if x <= v_split.key and v_split.key <= x1:
+            response.append(v_split)
     else:
-        if x <= v_split.key and v_split.key <= x1: 
-            response.append( v_split )        
+        if x <= v_split.key and v_split.key <= x1:
+            response.append(v_split)
         #--------------------------------------------#
         # percorre a subárvore à esquerda do nó split
         # e reporta todos os pontos à direita.
+        #
+
         v = v_split.left
         while not leaf(v):
             if x < v.key:
-                reportSubtree( v.right, response )
+                reportSubtree(v.right, response)
                 v = v.left
             else:
                 v = v.right
-        if x <= v.key: 
-            response.append( v )
-        
-        # semelhante para o limite de x' 
+        if v and x <= v.key:
+            response.append(v)
+        #
+        # semelhante para o limite de x'
+        #
         v = v_split.right
         while not leaf(v):
             if v.key <= x1:
-                reportSubtree( v.left, response )
+                reportSubtree(v.left, response)
                 v = v.right
             else:
                 v = v.left
         if v and v.key <= x1:
-            response.append( v )
+            response.append(v)
+        #
         #--------------------------------------------#
-
     return response
 
 #---------------------------------------------------#
-# Função que concatena recursivamente os nós na 
+# Função que concatena recursivamente os nós na
 # resposta que será reportada
 #
 # Entrada: um nó e uma lista de resposta
 # Saída: NA
 #---------------------------------------------------#
-def reportSubtree( node, response ):
+def reportSubtree(node, response):
     if not node:
         return True
     reportSubtree(node.left, response)
@@ -150,7 +156,7 @@ def reportSubtree( node, response ):
 # Entrada: nó raiz e um intervalo [x:x']
 # Saída: nó split
 #---------------------------------------------------#
-def findSplitNode( node, x, x1 ):
+def findSplitNode(node, x, x1):
     v = node
     while not leaf(v) and (x1 <= v.key or x > v.key):
         if x1 <= v.key:
@@ -169,14 +175,19 @@ def findSplitNode( node, x, x1 ):
 def split(points):
     left = []
     right = []
+    if len(points) % 2 == 0:
+        x_mid = len(points)/2
+    else:
+        x_mid = (len(points) - 1)/ 2
 
-    x_mid = median(points)
+    i = 0
 
-    for p in points:
-        if p.x <= x_mid:
-            left.append(p)
-        else:
-            right.append(p)
+    while i <= x_mid:
+        left.append(points[i])
+        i += 1
+    while i < len(points):
+        right.append(points[i])
+        i += 1
 
     return left, right
 
@@ -199,25 +210,19 @@ def getRootIndex(t):
 #---------------------------------------------------#
 # Função identifica se o nó é folha
 #
-# Entrada: um nó 
+# Entrada: um nó
 # Saída: True se for um nó folha,
 #        False caso contrário
 #---------------------------------------------------#
-def leaf( node ):
+def leaf(node):
     if not node or (not node.left and not node.right):
         return True
     return False
 
-def median(points):
-    total_x = 0
-    for p in points:
-        total_x += p.x
-    return total_x/len(points)
-
 def coordenada_y(P):
     P_y = []
     for point in P:
-        P_y.append( point.y )
+        P_y.append(point.y)
     return P_y
 
 #---------------------------------------------------#
