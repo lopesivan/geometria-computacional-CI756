@@ -4,6 +4,7 @@ class Point(object):
     def __init__(self, x, y):
         self.x = x
         self.y = y
+        self.segment = None
 
     def __repr__(self):
         return "(%s,%s)" % (self.x, self.y)
@@ -13,10 +14,21 @@ def getKey(point):
 
 class Segment(object):
     def __init__(self, x1, y1, x2, y2):
-        self.x1 = x1
-        self.y1 = y1
-        self.x2 = x2
-        self.y2 = y2
+        if y1 > y2:
+            self.upper = Point(x1, y1)
+            self.lower = Point(x2, y2)
+            if x1 < x2:
+                self.side = True
+            else:
+                self.side = False
+        else:
+            self.upper = Point(x2, y2)
+            self.lower = Point(x1, y1)
+            if x2 < x1:
+                self.side = True
+            else:
+                self.side = False
+        self.reported = False
 
 class Window(object):
     def __init__(self, x1, x2, y1, y2):
@@ -24,6 +36,55 @@ class Window(object):
         self.y1 = y1
         self.x2 = x2
         self.y2 = y2
+
+class Node(object):
+    def __init__(self, key, point):
+        self.key = key
+        self.point = point
+        self.left = None
+        self.right = None
+        self.tree_assoc = None
+        self.height = 1
+
+    def __repr__(self):
+        return "%s (%s,%s) %s" % (self.key, self.point.x, self.point.y, self.height)
+
+class Interval(object):
+    def __init__(self, x, x1, closed):
+        if x < x1:
+            self.left = x 
+            self.right = x1
+        else:
+            self.left = x1
+            self.right = x
+        self.closed = closed
+
+    def __repr__(self):
+        if self.closed:
+            return "[%s:%s]" % (self.left, self.right)
+        else:
+            return "(%s:%s)" % (self.left, self.right)
+
+
+#---------------------------------------------------#
+# Função para gerar intervalos elementares para a
+# árvore de segmentos
+#
+# Entrada: uma lista P de pontos
+# Saída: intervalos elementares
+#---------------------------------------------------#
+def interval(P):
+    response = []
+    response.append(Interval(-float("inf"), P[0].x, False))
+    i = 0
+    while i < len(P)-1:
+        response.append(Interval(P[i].x, P[i].x, True))
+        response.append(Interval(P[i].x, P[i+1].x, False))
+        i += 1
+    response.append(Interval(P[-1].x, P[-1].x, True))
+    response.append(Interval(P[-1].x, float("inf"), False))
+    return response
+
 
 def RangeTree(P):
     T = ArvBinBusca(P, 0)
@@ -225,20 +286,12 @@ def coordenada_y(P):
         P_y.append(point.y)
     return P_y
 
+
+
+
 #---------------------------------------------------#
 #------------- Funções para árvore AVL -------------#
 #---------------------------------------------------#
-class Node(object):
-    def __init__(self, key, point):
-        self.key = key
-        self.point = point
-        self.left = None
-        self.right = None
-        self.tree_assoc = None
-        self.height = 1
-
-    def __repr__(self):
-        return "%s (%s,%s) %s" % (self.key, self.point.x, self.point.y, self.height)
 
 #---------------------------------------------------#
 # Entrada: uma coleção de pontos, e um booleano
