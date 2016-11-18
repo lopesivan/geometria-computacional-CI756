@@ -31,6 +31,9 @@ class Segment(object):
                 self.side = False
         self.reported = False
 
+    def __repr__(self):
+        return "%s" % (self.id)
+
 class Window(object):
     def __init__(self, x1, x2, y1, y2):
         self.x1 = x1
@@ -53,21 +56,23 @@ class Node(object):
 class IntNode(object):
     def __init__(self, interval):
         self.key = interval
-        self.segment = None
+        self.segments = []
         self.left = None
         self.right = None
+        self.height = 1
 
     def __repr__(self):
-        return "%s" % (self.key)
+        return "%s %s - S:%s" % (self.key, self.height, self.segments)
 
 class Interval(object):
-    def __init__(self, x, x1, closed):
+    def __init__(self, x, x1, closed, semi=False):
         if x < x1:
             self.left = x 
             self.right = x1
         else:
             self.left = x1
             self.right = x
+        self.semiclosed = semi
         self.closed = closed
 
     def __repr__(self):
@@ -89,22 +94,19 @@ def interval(P):
     response.append(Interval(-float("inf"), P[0].x, False))
     i = 0
     while i < len(P)-1:
-        response.append(Interval(P[i].x, P[i].x, True))
-        response.append(Interval(P[i].x, P[i+1].x, False))
+        if P[i].x != P[i+1].x:
+            response.append(Interval(P[i].x, P[i].x, True))
+            response.append(Interval(P[i].x, P[i+1].x, False))
         i += 1
     response.append(Interval(P[-1].x, P[-1].x, True))
     response.append(Interval(P[-1].x, float("inf"), False))
     return response
 
 def SegmentTree(I):
-    if len(I) == 0:
-        print '0'
-        return
     if len(I) == 1:
-        print '1'
         v = IntNode(I[0])
     else:
-        left, right = split(I)
+        left, right = split2(I)
 
         v = IntNode(Interval(left[0].left, right[-1].right, False))
 
@@ -113,8 +115,47 @@ def SegmentTree(I):
 
         v.left = l_left
         v.right = l_right
-
+        v.height = max(height(v.left), height(v.right)) + 1
     return v
+
+def insertSegment(node, s):
+    if not node:
+        return
+    if intervalContained(node.key, s):
+        node.segments.append(s)
+        return
+    else:
+        if s.side:
+            if node.left:
+                if s.upper.x <= node.left.key.right:
+                    insertSegment(node.left, s)
+            if node.right:
+                if s.lower.x >= node.right.key.left:
+                    insertSegment(node.right, s)
+        else:
+            if node.left:
+                if s.lower.x <= node.left.key.right:
+                    insertSegment(node.left, s)
+            if node.right:
+                if s.upper.x >= node.right.key.left:
+                    insertSegment(node.right, s)
+
+
+def intervalContained(intvl, s):
+    if s.side:
+        if intvl.closed:
+            if s.upper.x <= intvl.left and intvl.right <= s.lower.x:
+                return True
+        else:
+            if s.upper.x <= intvl.left and intvl.right <= s.lower.x:
+                return True
+    else:
+        if intvl.closed:
+            if s.lower.x <= intvl.left and intvl.right <= s.upper.x:
+                return True
+        else:
+            if s.lower.x <= intvl.left and intvl.right <= s.upper.x:
+                return True
 
 def imprime_intervalos(node):
     if not node:
@@ -299,6 +340,25 @@ def split(points):
     i = 0
 
     while i <= x_mid:
+        left.append(points[i])
+        i += 1
+    while i < len(points):
+        right.append(points[i])
+        i += 1
+
+    return left, right
+
+def split2(points):
+    left = []
+    right = []
+    if len(points) % 2 == 0:
+        x_mid = len(points)/2
+    else:
+        x_mid = (len(points)-1)/ 2
+
+    i = 0
+
+    while i < x_mid:
         left.append(points[i])
         i += 1
     while i < len(points):

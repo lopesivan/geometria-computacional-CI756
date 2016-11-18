@@ -30,11 +30,13 @@ z = interval(y)
 print z
 
 
-arv = RangeTree(y)
-#arv = SegmentTree(z)
+#arv = RangeTree(y)
+arv = SegmentTree(z)
+for s in segments:
+    insertSegment(arv, s)
 #r = queryWindow(arv)
 #r = query2DRangeTree(arv, 4, 7, 5, 7)
-r = query2DRangeTree(arv, 1, 6, 1, 6)
+#r = query2DRangeTree(arv, 1, 6, 1, 6)
 #imprime_intervalos(arv)
 imprime_arv(arv)
-print r
+#print r
