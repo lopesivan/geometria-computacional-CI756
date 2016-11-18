@@ -76,6 +76,10 @@ class Interval(object):
         self.closed = closed
 
     def __repr__(self):
+        if self.semiclosed == 1:
+            return "(%s:%s]" % (self.left, self.right)
+        if self.semiclosed == 2:
+            return "[%s:%s)" % (self.left, self.right)
         if self.closed:
             return "[%s:%s]" % (self.left, self.right)
         else:
@@ -108,7 +112,16 @@ def SegmentTree(I):
     else:
         left, right = split2(I)
 
-        v = IntNode(Interval(left[0].left, right[-1].right, False))
+        if left[0].closed and right[-1].closed:
+            v = IntNode(Interval(left[0].left, right[-1].right, True))
+        # fechado à direita
+        if not left[0].closed and right[-1].closed:
+            v = IntNode(Interval(left[0].left, right[-1].right, False, 1))
+        # fechado à esquerda
+        if left[0].closed and not right[-1].closed:
+            v = IntNode(Interval(left[0].left, right[-1].right, False, 2))
+        if not left[0].closed and not right[-1].closed:
+            v = IntNode(Interval(left[0].left, right[-1].right, False))
 
         l_left = SegmentTree(left)
         l_right = SegmentTree(right)
@@ -140,7 +153,7 @@ def insertSegment(node, s):
                 if s.upper.x >= node.right.key.left:
                     insertSegment(node.right, s)
 
-
+# responde se s é maior ou igual ao intervalo baseado no eixo x
 def intervalContained(intvl, s):
     if s.side:
         if intvl.closed:
@@ -157,6 +170,31 @@ def intervalContained(intvl, s):
             if s.lower.x <= intvl.left and intvl.right <= s.upper.x:
                 return True
 
+def querySegmentTree(node, q):
+    if leaf(node):
+        print node.key
+        return
+
+    if node.left.key.closed:
+        if q <= node.left.key.right:
+            querySegmentTree(node.left, q)
+    else:
+        if not node.left.key.semiclosed and q < node.left.key.right:
+            querySegmentTree(node.left, q)
+        if node.left.key.semiclosed == 1 and q <= node.left.key.right:
+            querySegmentTree(node.left, q)
+
+    if node.right.key.closed:
+        if q >= node.right.key.left:
+            querySegmentTree(node.right, q)
+    else:
+        if not node.right.key.semiclosed and q > node.right.key.left:
+            querySegmentTree(node.right, q)
+        if node.right.key.semiclosed == 2 and q >= node.right.key.left:
+            querySegmentTree(node.right, q)
+
+    return
+    
 def imprime_intervalos(node):
     if not node:
         print 'folha vazia'

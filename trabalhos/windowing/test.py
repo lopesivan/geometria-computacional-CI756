@@ -38,5 +38,6 @@ for s in segments:
 #r = query2DRangeTree(arv, 4, 7, 5, 7)
 #r = query2DRangeTree(arv, 1, 6, 1, 6)
 #imprime_intervalos(arv)
+querySegmentTree(arv, 3)
 imprime_arv(arv)
 #print r
