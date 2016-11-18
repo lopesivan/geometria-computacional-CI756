@@ -170,28 +170,35 @@ def intervalContained(intvl, s):
             if s.lower.x <= intvl.left and intvl.right <= s.upper.x:
                 return True
 
-def querySegmentTree(node, q):
+def querySegmentTree(node, q, rep):
     if leaf(node):
+        rep.extend(node.segments)
         print node.key
         return
 
     if node.left.key.closed:
         if q <= node.left.key.right:
-            querySegmentTree(node.left, q)
+            rep.extend(node.segments)
+            querySegmentTree(node.left, q, rep)
     else:
         if not node.left.key.semiclosed and q < node.left.key.right:
-            querySegmentTree(node.left, q)
+            rep.extend(node.segments)
+            querySegmentTree(node.left, q, rep)
         if node.left.key.semiclosed == 1 and q <= node.left.key.right:
+            rep.extend(node.segments)
             querySegmentTree(node.left, q)
 
     if node.right.key.closed:
         if q >= node.right.key.left:
-            querySegmentTree(node.right, q)
+            rep.extend(node.segments)
+            querySegmentTree(node.right, q, rep)
     else:
         if not node.right.key.semiclosed and q > node.right.key.left:
-            querySegmentTree(node.right, q)
+            rep.extend(node.segments)
+            querySegmentTree(node.right, q, rep)
         if node.right.key.semiclosed == 2 and q >= node.right.key.left:
-            querySegmentTree(node.right, q)
+            rep.extend(node.segments)
+            querySegmentTree(node.right, q, rep)
 
     return
     
