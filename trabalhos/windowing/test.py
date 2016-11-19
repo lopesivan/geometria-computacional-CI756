@@ -1,6 +1,6 @@
 # coding=UTF-8
-import Windowing
-from Windowing import *
+import windowing
+from windowing import *
 
 x = []
 segments = []
@@ -18,28 +18,6 @@ segments.append(Segment(3, 6, 8, 6, 7))
 #x.append(Point(2,4))
 #x.append(Point(1,0))
 #x.append(Point(4,2))
-for s in segments:
-    x.append(s.upper)
-    x.append(s.lower)
-
-
-y = sorted(x, key=getKey)
-print y
-
-z = interval(y)
-print z
-
-
-#arv = RangeTree(y)
-arv = SegmentTree(z)
-for s in segments:
-    insertSegment(arv, s)
-#r = queryWindow(arv)
-#r = query2DRangeTree(arv, 4, 7, 5, 7)
-#r = query2DRangeTree(arv, 1, 6, 1, 6)
-#imprime_intervalos(arv)
-teste = []
-querySegmentTree(arv, 8, teste)
-print teste
-imprime_arv(arv)
+resposta = windowQuery( segments, Window(4, 7, 5, 7) )
+print resposta
 #print r
