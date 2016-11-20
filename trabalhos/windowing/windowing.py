@@ -8,8 +8,10 @@ class Point(object):
     def __repr__(self):
         return "(%s,%s) - %s" % (self.x, self.y, self.segment.id)
 
-def getKey(point):
+def getKeyX(point):
     return point.x
+def getKeyY(point):
+    return point.y
 
 class Segment(object):
     def __init__(self, id, x1, x2, y1, y2):
@@ -109,29 +111,34 @@ def windowQuery(segments, window):
         endpoints.append(s.upper)
         endpoints.append(s.lower)
 
-    sorted_endpoints = sorted(endpoints, key=getKey)
+    sorted_endpoints_x = sorted(endpoints, key=getKeyX)
+    sorted_endpoints_y = sorted(endpoints, key=getKeyY)
+    
 
     window_left = Segment(-1, window.x, window.x, window.y, window.y1)
     window_right = Segment(-2, window.x1, window.x1, window.y, window.y1)
     window_top = Segment(-3, window.x, window.x1, window.y1, window.y1)
     #window_bottom = Segment(-4, window.x, window.x1, window.y, window.y)
 
-    elem_intervals = interval(sorted_endpoints)
+    elem_intervals_v = interval_x(sorted_endpoints_x)
+    elem_intervals_h = interval_y(sorted_endpoints_y)
 
 
-    rtree = RangeTree(sorted_endpoints)
-    stree = SegmentTree(elem_intervals)
+    rtree = RangeTree(sorted_endpoints_x)
+    stree_v = SegmentTree(elem_intervals_v)
+    stree_h = SegmentTree(elem_intervals_h)
 
     for s in segments:
-        insertSegment(stree, s)
+        insertSegmentHorizontal(stree_h, s)
+        insertSegmentVertical(stree_v, s)
 
     q1 = query2DRangeTree(rtree, window.x, window.x1, window.y, window.y1)
-
     q2 = []
-    querySegmentTree(stree, window_left, q2)
-    querySegmentTree(stree, window_right, q2)
-    #querySegmentTree(arv, window_top, resposta)
-    #querySegmentTree(arv, window_bottom, resposta)
+    
+    querySegmentTreeVertical(stree_v, window_left, q2)
+    querySegmentTreeVertical(stree_v, window_right, q2)
+    querySegmentTreeHorizontal(stree_h, window_top, q2)
+    #querySegmentTreeHorizontal(stree_h, window_bottom, q2)
 
     return q1 + q2
 
@@ -142,7 +149,7 @@ def windowQuery(segments, window):
 # Entrada: uma lista P de pontos
 # Saída: intervalos elementares baseados no eixo-x
 #---------------------------------------------------#
-def interval(P):
+def interval_x(P):
     response = []
     response.append(Interval(-float("inf"), P[0].x, False))
     i = 0
@@ -155,6 +162,25 @@ def interval(P):
     response.append(Interval(P[-1].x, float("inf"), False))
     return response
 
+def interval_y(P):
+    response = []
+    response.append(Interval(-float("inf"), P[0].y, False))
+    i = 0
+    while i < len(P)-1:
+        if P[i].y != P[i+1].y:
+            response.append(Interval(P[i].y, P[i].y, True))
+            response.append(Interval(P[i].y, P[i+1].y, False))
+        i += 1
+    response.append(Interval(P[-1].y, P[-1].y, True))
+    response.append(Interval(P[-1].y, float("inf"), False))
+    return response
+
+#---------------------------------------------------#
+# Função para gerar a árvore de segmentos
+#
+# Entrada: uma lista I de intervalos elementares
+# Saída: uma árvore de segmentos
+#---------------------------------------------------#
 def SegmentTree(I):
     if len(I) == 1:
         v = IntNode(I[0])
@@ -180,70 +206,102 @@ def SegmentTree(I):
         v.height = max(height(v.left), height(v.right)) + 1
     return v
 
-def insertSegment(node, s):
+def insertSegmentVertical(node, s):
     if not node:
         return
-    if intervalContained(node.key, s):
+    if intervalContainedX(node.key, s):
         node.segments = insert_y(node.segments, s.upper)
         return
     else:
         if s.side:
             if node.left:
                 if s.upper.x <= node.left.key.right:
-                    insertSegment(node.left, s)
+                    insertSegmentVertical(node.left, s)
             if node.right:
                 if s.lower.x >= node.right.key.left:
-                    insertSegment(node.right, s)
+                    insertSegmentVertical(node.right, s)
         else:
             if node.left:
                 if s.lower.x <= node.left.key.right:
-                    insertSegment(node.left, s)
+                    insertSegmentVertical(node.left, s)
             if node.right:
                 if s.upper.x >= node.right.key.left:
-                    insertSegment(node.right, s)
+                    insertSegmentVertical(node.right, s)
+
+
+def insertSegmentHorizontal(node, s):
+    if not node:
+        return
+    if intervalContainedY(node.key, s):
+        node.segments = insert_x(node.segments, s.upper)
+        return
+    else:
+        if node.left:
+            if s.lower.y <= node.left.key.right:
+                insertSegmentHorizontal(node.left, s)
+        if node.right:
+            if s.upper.y >= node.right.key.left:
+                insertSegmentHorizontal(node.right, s)
 
 # responde se s é maior ou igual ao intervalo baseado no eixo x
-def intervalContained(intvl, s):
+def intervalContainedX(intvl, s):
     if s.side:
-        if s.upper.x <= intvl.left and intvl.right <= s.lower.x:
+        if s.lower.x <= intvl.left and intvl.right <= s.upper.x:
             return True
     else:
         if s.lower.x <= intvl.left and intvl.right <= s.upper.x:
             return True
     return False
 
-def querySegmentTree(node, q, response):
+
+# responde se s é maior ou igual ao intervalo baseado no eixo y
+def intervalContainedY(intvl, s):
+    if s.lower.y <= intvl.left and intvl.right <= s.upper.y:
+        return True
+    return False
+
+
+def querySegmentTreeVertical(node, q, response):
     if leaf(node):
-        response.extend(reportIntersection(node.segments, q))
+        response += reportIntersectionVertical(node.segments, q)
         return
 
     if node.left.key.closed:
         if q.upper.x <= node.left.key.right:
-            response.extend(reportIntersection(node.segments, q))
-            querySegmentTree(node.left, q, response)
+            response += reportIntersectionVertical(node.segments, q)
+            querySegmentTreeVertical(node.left, q, response)
     else:
         if not node.left.key.semiclosed and q.upper.x < node.left.key.right:
-            response.extend(reportIntersection(node.segments, q))
-            querySegmentTree(node.left, q, response)
+            response += reportIntersectionVertical(node.segments, q)
+            querySegmentTreeVertical(node.left, q, response)
+
         if node.left.key.semiclosed == 1 and q.upper.x <= node.left.key.right:
-            response.extend(reportIntersection(node.segments, q))
-            querySegmentTree(node.left, q)
+            response += reportIntersectionVertical(node.segments, q)
+            querySegmentTreeVertical(node.left, q, response)
+
+        if node.left.key.semiclosed == 2 and q.upper.x < node.left.key.right:
+            response += reportIntersectionVertical(node.segments, q)
+            querySegmentTreeVertical(node.left, q, response)          
 
     if node.right.key.closed:
         if q.upper.x >= node.right.key.left:
-            response.extend(reportIntersection(node.segments, q))
-            querySegmentTree(node.right, q, response)
+            response += reportIntersectionVertical(node.segments, q)
+            querySegmentTreeVertical(node.right, q, response)
     else:
         if not node.right.key.semiclosed and q.upper.x > node.right.key.left:
-            response.extend(reportIntersection(node.segments, q))
-            querySegmentTree(node.right, q, response)
+            response += reportIntersectionVertical(node.segments, q)
+            querySegmentTreeVertical(node.right, q, response)
+
+        if node.right.key.semiclosed == 1 and q.upper.x > node.right.key.left:
+            response += reportIntersectionVertical(node.segments, q)
+            querySegmentTreeVertical(node.right, q, response)
+
         if node.right.key.semiclosed == 2 and q.upper.x >= node.right.key.left:
-            response.extend(reportIntersection(node.segments, q))
-            querySegmentTree(node.right, q, response)
+            response += reportIntersectionVertical(node.segments, q)
+            querySegmentTreeVertical(node.right, q, response)
     return 
 
-
-def reportIntersection(node, q):
+def reportIntersectionVertical(node, q):
     response = []
     
     if not node:
@@ -253,20 +311,86 @@ def reportIntersection(node, q):
             response.append(node.point.segment.id)
             node.point.segment.reported = True
             if node.left:
-                response.extend(reportIntersection(node.left, q))
+                response += reportIntersectionVertical(node.left, q)
             if node.right:
-                response.extend(reportIntersection(node.right, q))
-            return response
+                response += reportIntersectionVertical(node.right, q)
         else:
             if node.key > q.upper.y:
                 if node.left:
-                    return response.extend(reportIntersection(node.left, q))
+                    response += reportIntersectionVertical(node.left, q)
             else:
                 if node.right:
-                    return response.extend(reportIntersection(node.right, q))
+                    response += reportIntersectionVertical(node.right, q)
     else:
-        response.extend(reportIntersection(node.left, q))
-        response.extend(reportIntersection(node.right, q))
+        response += reportIntersectionVertical(node.left, q)
+        response += reportIntersectionVertical(node.right, q)
+    return response
+
+def querySegmentTreeHorizontal(node, q, response):
+    if leaf(node):
+        response.extend(reportIntersectionHorizontal(node.segments, q))
+        return
+
+    if node.left.key.closed:
+        if q.upper.y <= node.left.key.right:
+            response.extend(reportIntersectionHorizontal(node.segments, q))
+            querySegmentTreeHorizontal(node.left, q, response)
+    else:
+        if not node.left.key.semiclosed and q.upper.y < node.left.key.right:
+            response.extend(reportIntersectionHorizontal(node.segments, q))
+            querySegmentTreeHorizontal(node.left, q, response)
+        if node.left.key.semiclosed == 1 and q.upper.y <= node.left.key.right:
+            response += reportIntersectionHorizontal(node.segments, q)
+            querySegmentTreeHorizontal(node.left, q, response)
+
+        if node.left.key.semiclosed == 2 and q.upper.y < node.left.key.right:
+            response += reportIntersectionHorizontal(node.segments, q)
+            querySegmentTreeHorizontal(node.left, q, response)            
+
+    if node.right.key.closed:
+        if q.upper.y >= node.right.key.left:
+            response += reportIntersectionHorizontal(node.segments, q)
+            querySegmentTreeHorizontal(node.right, q, response)
+    else:
+        if not node.right.key.semiclosed and q.upper.y > node.right.key.left:
+            response += reportIntersectionHorizontal(node.segments, q)
+            querySegmentTreeHorizontal(node.right, q, response)
+
+        if node.right.key.semiclosed == 1 and q.upper.y > node.right.key.left:
+            response += reportIntersectionHorizontal(node.segments, q)
+            querySegmentTreeHorizontal(node.right, q, response)
+
+        if node.right.key.semiclosed == 2 and q.upper.y >= node.right.key.left:
+            response += reportIntersectionHorizontal(node.segments, q)
+            querySegmentTreeHorizontal(node.right, q, response)
+    return 
+
+def reportIntersectionHorizontal(node, q):
+    response = []
+    
+    if not node:
+        return response
+    if not node.point.segment.reported:
+        if intersects(node.point.segment, q):
+            response.append(node.point.segment.id)
+            node.point.segment.reported = True
+            if node.left:
+                response += reportIntersectionHorizontal(node.left, q)
+            if node.right:
+                response += reportIntersectionHorizontal(node.right, q)
+            #return response
+        else:
+            if node.key > q.upper.x:
+                if node.left:
+                    response += reportIntersectionHorizontal(node.left, q)
+                    #return response
+            else:
+                if node.right:
+                    response += reportIntersectionHorizontal(node.right, q)
+                    #return response
+    else:
+        response += reportIntersectionHorizontal(node.left, q)
+        response += reportIntersectionHorizontal(node.right, q)
     return response
 
 #---------------------------------------------------#
@@ -430,7 +554,9 @@ def reportSubtree(node, response):
         return True
     reportSubtree(node.left, response)
     reportSubtree(node.right, response)
-    response.append(node)
+    if not node.point.segment.reported:
+        response.append(node.point.segment.id)
+        node.point.segment.reported = True
     return True
 
 #---------------------------------------------------#
@@ -520,13 +646,6 @@ def leaf(node):
     if not node or (not node.left and not node.right):
         return True
     return False
-
-def coordenada_y(P):
-    P_y = []
-    for point in P:
-        P_y.append(point.y)
-    return P_y
-
 
 
 
