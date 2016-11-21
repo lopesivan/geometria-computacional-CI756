@@ -21,15 +21,23 @@ class Segment(object):
             self.lower = Point(x2, y2, self)
             if x1 < x2:
                 self.side = True
+                self.left = Point(x1, y1, self)
+                self.right = Point(x2, y2, self)
             else:
                 self.side = False
+                self.left = Point(x2, y2, self)  
+                self.right = Point(x1, y1, self)
         else:
             self.upper = Point(x2, y2, self)
             self.lower = Point(x1, y1, self)
             if x2 < x1:
                 self.side = True
+                self.left = Point(x2, y2, self)
+                self.right = Point(x1, y1, self)
             else:
                 self.side = False
+                self.left = Point(x1, y1, self)
+                self.right = Point(x2, y2, self)
         self.reported = False
 
     def __repr__(self):
@@ -52,7 +60,7 @@ class Node(object):
         self.height = 1
 
     def __repr__(self):
-        return "%s (%s,%s) %s" % (self.key, self.point.x, self.point.y, self.height)
+        return "[%s - %s]" % (self.point.segment.id, self.height)
 
 class IntNode(object):
     def __init__(self, interval):
@@ -63,7 +71,10 @@ class IntNode(object):
         self.height = 1
 
     def __repr__(self):
-        return "%s %s - S:%s" % (self.key, self.height, self.segments)
+        if self.segments:
+            return "%s %s - S:%s" % (self.key, self.height, self.segments)
+        else:
+            return "%s %s" % (self.key, self.height)
 
 class Interval(object):
     def __init__(self, x, x1, closed, semi=False):
@@ -105,6 +116,14 @@ class ArvBinBusca(object):
     def __repr__(self):
         return "%s (%s,%s) %s" % (self.root.key, self.root.point.x, self.root.point.y, self.root.height)
 
+
+#---------------------------------------------------#
+# Função que recebe segmentos e uma janela, retornando
+# os segmentos dentro dela
+#
+# Entrada: uma lista de segmentos e uma janela [x:x']x[y:y']
+# Saída: os segmentos que estão dentro da janela
+#---------------------------------------------------#
 def windowQuery(segments, window):
     endpoints = []
     for s in segments:
@@ -132,9 +151,13 @@ def windowQuery(segments, window):
         insertSegmentHorizontal(stree_h, s)
         insertSegmentVertical(stree_v, s)
 
+    #imprime_arv(stree_h)
+    #print '---------------------------'
+    #imprime_arv(stree_v)
+
     q1 = query2DRangeTree(rtree, window.x, window.x1, window.y, window.y1)
     q2 = []
-    
+    #print q1
     querySegmentTreeVertical(stree_v, window_left, q2)
     querySegmentTreeVertical(stree_v, window_right, q2)
     querySegmentTreeHorizontal(stree_h, window_top, q2)
@@ -162,6 +185,13 @@ def interval_x(P):
     response.append(Interval(P[-1].x, float("inf"), False))
     return response
 
+#---------------------------------------------------#
+# Função para gerar intervalos elementares para a
+# árvore de segmentos
+#
+# Entrada: uma lista P de pontos
+# Saída: intervalos elementares baseados no eixo-y
+#---------------------------------------------------#
 def interval_y(P):
     response = []
     response.append(Interval(-float("inf"), P[0].y, False))
@@ -246,7 +276,7 @@ def insertSegmentHorizontal(node, s):
 # responde se s é maior ou igual ao intervalo baseado no eixo x
 def intervalContainedX(intvl, s):
     if s.side:
-        if s.lower.x <= intvl.left and intvl.right <= s.upper.x:
+        if s.upper.x <= intvl.left and intvl.right <= s.lower.x:
             return True
     else:
         if s.lower.x <= intvl.left and intvl.right <= s.upper.x:
@@ -481,7 +511,7 @@ def query2DRangeTree(node, x, x1, y, y1):
 
         v = v_split.right
         while not leaf(v):
-            if v.point.x <= x1:
+            if v.point.x < x1:
                 response.extend(query1DRangeTree(v.tree_assoc, y, y1))
                 v = v.right
             else:
@@ -499,12 +529,12 @@ def query1DRangeTree(node, x, x1):
     response = []
     v_split = findSplitNode(node, x, x1)
     if leaf(v_split):
-        if x <= v_split.key and v_split.key <= x1:
+        if x < v_split.key and v_split.key < x1:
             if not v_split.point.segment.reported:
                 response.append(v_split.point.segment.id)
                 v_split.point.segment.reported = True
     else:
-        if x <= v_split.key and v_split.key <= x1:
+        if x < v_split.key and v_split.key < x1:
             if not v_split.point.segment.reported:
                 response.append(v_split.point.segment.id)
                 v_split.point.segment.reported = True
@@ -520,7 +550,7 @@ def query1DRangeTree(node, x, x1):
                 v = v.left
             else:
                 v = v.right
-        if v and x <= v.key:
+        if v and x < v.key:
             if not v.point.segment.reported:
                 response.append(v.point.segment.id)
                 v.point.segment.reported = True
@@ -529,12 +559,12 @@ def query1DRangeTree(node, x, x1):
         #
         v = v_split.right
         while not leaf(v):
-            if v.key <= x1:
+            if v.key < x1:
                 reportSubtree(v.left, response)
                 v = v.right
             else:
                 v = v.left
-        if v and v.key <= x1:
+        if v and v.key < x1:
             if not v.point.segment.reported:
                 response.append(v.point.segment.id)
                 v.point.segment.reported = True
@@ -771,3 +801,7 @@ def height(node):
     if not node:
         return 0
     return node.height
+
+def clean(s, ids):
+    for i in ids:
+        s[i-1].reported = False
