@@ -8,6 +8,7 @@ class Point(object):
     def __repr__(self):
         return "(%s,%s) - %s" % (self.x, self.y, self.segment.id)
 
+# funções para executar uma ordenação em um array de Point
 def getKeyX(point):
     return point.x
 def getKeyY(point):
@@ -20,22 +21,18 @@ class Segment(object):
             self.upper = Point(x1, y1, self)
             self.lower = Point(x2, y2, self)
             if x1 < x2:
-                self.side = True
                 self.left = Point(x1, y1, self)
                 self.right = Point(x2, y2, self)
             else:
-                self.side = False
                 self.left = Point(x2, y2, self)  
                 self.right = Point(x1, y1, self)
         else:
             self.upper = Point(x2, y2, self)
             self.lower = Point(x1, y1, self)
             if x2 < x1:
-                self.side = True
                 self.left = Point(x2, y2, self)
                 self.right = Point(x1, y1, self)
             else:
-                self.side = False
                 self.left = Point(x1, y1, self)
                 self.right = Point(x2, y2, self)
         self.reported = False
@@ -97,24 +94,6 @@ class Interval(object):
         else:
             return "(%s:%s)" % (self.left, self.right)
 
-#---------------------------------------------------#
-# Entrada: uma coleção de pontos, e um booleano
-#          indicando por qual coordenada será 
-#          usada como chave (true para eixo x)
-# Saída: uma arvore binária balanceada
-#---------------------------------------------------#
-class ArvBinBusca(object):
-    def __init__(self, P, x_coord=True):
-        self.root = None
-        if x_coord:
-            for point in P:
-                self.root = insert_x( self.root, point )
-        else:
-            for point in P:
-                self.root = insert_y( self.root, point )
-
-    def __repr__(self):
-        return "%s (%s,%s) %s" % (self.root.key, self.root.point.x, self.root.point.y, self.root.height)
 
 
 #---------------------------------------------------#
@@ -151,13 +130,9 @@ def windowQuery(segments, window):
         insertSegmentHorizontal(stree_h, s)
         insertSegmentVertical(stree_v, s)
 
-    #imprime_arv(stree_h)
-    #print '---------------------------'
-    #imprime_arv(stree_v)
-
     q1 = query2DRangeTree(rtree, window.x, window.x1, window.y, window.y1)
+
     q2 = []
-    #print q1
     querySegmentTreeVertical(stree_v, window_left, q2)
     querySegmentTreeVertical(stree_v, window_right, q2)
     querySegmentTreeHorizontal(stree_h, window_top, q2)
@@ -206,7 +181,8 @@ def interval_y(P):
     return response
 
 #---------------------------------------------------#
-# Função para gerar a árvore de segmentos
+# Função para gerar a árvore de segmentos baseada
+# nos intervalos elementares
 #
 # Entrada: uma lista I de intervalos elementares
 # Saída: uma árvore de segmentos
@@ -236,6 +212,13 @@ def SegmentTree(I):
         v.height = max(height(v.left), height(v.right)) + 1
     return v
 
+#---------------------------------------------------#
+# Insere um segmento na árvore de segmentos baseado
+# no eixo x
+#
+# Entrada: o nó raiz da árvore e o segmento
+# Saída: NA
+#---------------------------------------------------#
 def insertSegmentVertical(node, s):
     if not node:
         return
@@ -243,22 +226,20 @@ def insertSegmentVertical(node, s):
         node.segments = insert_y(node.segments, s.upper)
         return
     else:
-        if s.side:
-            if node.left:
-                if s.upper.x <= node.left.key.right:
-                    insertSegmentVertical(node.left, s)
-            if node.right:
-                if s.lower.x >= node.right.key.left:
-                    insertSegmentVertical(node.right, s)
-        else:
-            if node.left:
-                if s.lower.x <= node.left.key.right:
-                    insertSegmentVertical(node.left, s)
-            if node.right:
-                if s.upper.x >= node.right.key.left:
-                    insertSegmentVertical(node.right, s)
+        if node.left:
+            if s.left.x <= node.left.key.right:
+                insertSegmentVertical(node.left, s)
+        if node.right:
+            if s.right.x >= node.right.key.left:
+                insertSegmentVertical(node.right, s)
 
-
+#---------------------------------------------------#
+# Insere um segmento na árvore de segmentos baseado
+# no eixo y
+#
+# Entrada: o nó raiz da árvore e o segmento
+# Saída: NA
+#---------------------------------------------------#
 def insertSegmentHorizontal(node, s):
     if not node:
         return
@@ -273,24 +254,42 @@ def insertSegmentHorizontal(node, s):
             if s.upper.y >= node.right.key.left:
                 insertSegmentHorizontal(node.right, s)
 
-# responde se s é maior ou igual ao intervalo baseado no eixo x
+
+#---------------------------------------------------#
+# Responde se um intervalo está completamente contido
+# entre os endpoints do segmento baseado no eixo x
+#
+# Entrada: um intervalo e um segmento
+# Saída: True caso o intervalo esteja completamente contido
+#        False caso contrário
+#---------------------------------------------------#
 def intervalContainedX(intvl, s):
-    if s.side:
-        if s.upper.x <= intvl.left and intvl.right <= s.lower.x:
-            return True
-    else:
-        if s.lower.x <= intvl.left and intvl.right <= s.upper.x:
-            return True
+    if s.left.x <= intvl.left and intvl.right <= s.right.x:
+        return True
     return False
 
-
-# responde se s é maior ou igual ao intervalo baseado no eixo y
+#---------------------------------------------------#
+# Responde se um intervalo está completamente contido
+# entre os endpoints do segmento baseado no eixo y
+#
+# Entrada: um intervalo e um segmento
+# Saída: True caso o intervalo esteja completamente contido
+#        False caso contrário
+#---------------------------------------------------#
 def intervalContainedY(intvl, s):
     if s.lower.y <= intvl.left and intvl.right <= s.upper.y:
         return True
     return False
 
-
+#---------------------------------------------------#
+# Faz uma busca na árvore de segmentos baseado em uma
+# fronteira vertical da janela de busca e guarda a 
+# resposta em response
+#
+# Entrada: o nó raiz, um segmento de busca vertical e 
+#          um array para armazenar a resposta
+# Saída: NA
+#---------------------------------------------------#
 def querySegmentTreeVertical(node, q, response):
     if leaf(node):
         response += reportIntersectionVertical(node.segments, q)
@@ -331,6 +330,63 @@ def querySegmentTreeVertical(node, q, response):
             querySegmentTreeVertical(node.right, q, response)
     return 
 
+#---------------------------------------------------#
+# Faz uma busca na árvore de segmentos baseado em uma
+# fronteira horizontal da janela de busca e guarda a 
+# resposta em response
+#
+# Entrada: o nó raiz, um segmento de busca horizontal e 
+#          um array para armazenar a resposta
+# Saída: NA
+#---------------------------------------------------#
+def querySegmentTreeHorizontal(node, q, response):
+    if leaf(node):
+        response += reportIntersectionHorizontal(node.segments, q)
+        return
+
+    if node.left.key.closed:
+        if q.left.y <= node.left.key.right:
+            response += reportIntersectionHorizontal(node.segments, q)
+            querySegmentTreeHorizontal(node.left, q, response)
+    else:
+        if not node.left.key.semiclosed and q.left.y < node.left.key.right:
+            response += reportIntersectionHorizontal(node.segments, q)
+            querySegmentTreeHorizontal(node.left, q, response)
+            
+        if node.left.key.semiclosed == 1 and q.left.y <= node.left.key.right:
+            response += reportIntersectionHorizontal(node.segments, q)
+            querySegmentTreeHorizontal(node.left, q, response)
+
+        if node.left.key.semiclosed == 2 and q.left.y < node.left.key.right:
+            response += reportIntersectionHorizontal(node.segments, q)
+            querySegmentTreeHorizontal(node.left, q, response)            
+
+    if node.right.key.closed:
+        if q.left.y >= node.right.key.left:
+            response += reportIntersectionHorizontal(node.segments, q)
+            querySegmentTreeHorizontal(node.right, q, response)
+    else:
+        if not node.right.key.semiclosed and q.left.y > node.right.key.left:
+            response += reportIntersectionHorizontal(node.segments, q)
+            querySegmentTreeHorizontal(node.right, q, response)
+
+        if node.right.key.semiclosed == 1 and q.left.y > node.right.key.left:
+            response += reportIntersectionHorizontal(node.segments, q)
+            querySegmentTreeHorizontal(node.right, q, response)
+
+        if node.right.key.semiclosed == 2 and q.left.y >= node.right.key.left:
+            response += reportIntersectionHorizontal(node.segments, q)
+            querySegmentTreeHorizontal(node.right, q, response)
+    return 
+
+#---------------------------------------------------#
+# Realiza a busca no subconjunto canônico e reporta 
+# os segmentos que intersectam uma fronteira vertical
+# da janela
+#
+# Entrada: o nó raiz e um segmento de busca vertical 
+# Saída: os segmentos que intersectam 
+#---------------------------------------------------#
 def reportIntersectionVertical(node, q):
     response = []
     
@@ -356,45 +412,14 @@ def reportIntersectionVertical(node, q):
         response += reportIntersectionVertical(node.right, q)
     return response
 
-def querySegmentTreeHorizontal(node, q, response):
-    if leaf(node):
-        response.extend(reportIntersectionHorizontal(node.segments, q))
-        return
-
-    if node.left.key.closed:
-        if q.upper.y <= node.left.key.right:
-            response.extend(reportIntersectionHorizontal(node.segments, q))
-            querySegmentTreeHorizontal(node.left, q, response)
-    else:
-        if not node.left.key.semiclosed and q.upper.y < node.left.key.right:
-            response.extend(reportIntersectionHorizontal(node.segments, q))
-            querySegmentTreeHorizontal(node.left, q, response)
-        if node.left.key.semiclosed == 1 and q.upper.y <= node.left.key.right:
-            response += reportIntersectionHorizontal(node.segments, q)
-            querySegmentTreeHorizontal(node.left, q, response)
-
-        if node.left.key.semiclosed == 2 and q.upper.y < node.left.key.right:
-            response += reportIntersectionHorizontal(node.segments, q)
-            querySegmentTreeHorizontal(node.left, q, response)            
-
-    if node.right.key.closed:
-        if q.upper.y >= node.right.key.left:
-            response += reportIntersectionHorizontal(node.segments, q)
-            querySegmentTreeHorizontal(node.right, q, response)
-    else:
-        if not node.right.key.semiclosed and q.upper.y > node.right.key.left:
-            response += reportIntersectionHorizontal(node.segments, q)
-            querySegmentTreeHorizontal(node.right, q, response)
-
-        if node.right.key.semiclosed == 1 and q.upper.y > node.right.key.left:
-            response += reportIntersectionHorizontal(node.segments, q)
-            querySegmentTreeHorizontal(node.right, q, response)
-
-        if node.right.key.semiclosed == 2 and q.upper.y >= node.right.key.left:
-            response += reportIntersectionHorizontal(node.segments, q)
-            querySegmentTreeHorizontal(node.right, q, response)
-    return 
-
+#---------------------------------------------------#
+# Realiza a busca no subconjunto canônico e reporta 
+# os segmentos que intersectam uma fronteira horizontal
+# da janela
+#
+# Entrada: o nó raiz e um segmento de busca horizontal 
+# Saída: os segmentos que intersectam 
+#---------------------------------------------------#
 def reportIntersectionHorizontal(node, q):
     response = []
     
@@ -437,24 +462,19 @@ def intersects(s1, s2):
     return intersect(s1.upper, s1.lower, s2.upper, s2.lower)
 #---------------------------------------------------#
 
-def imprime_intervalos(node):
-    if not node:
-        print 'folha vazia'
-        return
-    
-    print node.key
-    imprime_intervalos(node.left)
-    print ' - '
-    imprime_intervalos(node.right)
-
-
+#---------------------------------------------------#
+# Monta uma Range Tree 2D baseado em pontos no plano
+#
+# Entrada: um conjunto de pontos
+# Saída: nó raiz da árvore
+#---------------------------------------------------#
 def RangeTree(P):
-    T = ArvBinBusca(P, 0)
+    T = avlTree(P)
     if len(P) == 0:
         return
     if len(P) == 1:
         v = Node(P[0].x, P[0])
-        v.tree_assoc = T.root
+        v.tree_assoc = T
     else:
         #--------------------------------------------#
         # Divide o conjunto de pontos com base na
@@ -474,13 +494,19 @@ def RangeTree(P):
 
         # guarda a raiz da árvore balanceada associada
         # no nó do meio
-        v.tree_assoc = T.root
+        v.tree_assoc = T
         #--------------------------------------------#
 
         v.height = max(height(v.left), height(v.right)) + 1
 
     return v
 
+#---------------------------------------------------#
+# Busca em uma Range Tree 2D baseado em uma janela
+#
+# Entrada: a raiz da Range Tree e uma janela
+# Saída: pontos que estão dentro da janela
+#---------------------------------------------------#
 def query2DRangeTree(node, x, x1, y, y1):
     response = []
     v_split = findSplitNode(node, x, x1)
@@ -524,7 +550,12 @@ def query2DRangeTree(node, x, x1, y, y1):
 
     return response
 
-
+#---------------------------------------------------#
+# Busca em uma Range Tree 1D baseado em uma janela
+#
+# Entrada: a raiz da Range Tree e uma janela
+# Saída: pontos que estão dentro da janela
+#---------------------------------------------------#
 def query1DRangeTree(node, x, x1):
     response = []
     v_split = findSplitNode(node, x, x1)
@@ -683,7 +714,17 @@ def leaf(node):
 #------------- Funções para árvore AVL -------------#
 #---------------------------------------------------#
 
-
+#---------------------------------------------------#
+# Entrada: uma coleção de pontos, e um booleano
+#          indicando por qual coordenada será 
+#          usada como chave (true para eixo x)
+# Saída: uma arvore binária balanceada
+#---------------------------------------------------#
+def avlTree(P):
+    root = None
+    for point in P:
+        root = insert_y( root, point )
+    return root
 
 #---------------------------------------------------#
 # Função recursiva para inserir um ponto na árvore
@@ -782,6 +823,7 @@ def rot_right_left(n):
     n.right = rot_right(n.right)
     return rot_left(n)
 
+# imprime a árvore "deitada"
 def imprime_arv(node):
     if not node:
         return
@@ -792,16 +834,21 @@ def imprime_arv(node):
     print esp, node
     imprime_arv(node.right)
 
+# retorna o balanceamento do nó para a árvore AVL
+# 0 caso não exista
 def get_balance(node):
     if not node:
         return 0
     return height(node.left) - height(node.right)
 
+# retorna a altura do nó, 0 caso não exista
 def height(node):
     if not node:
         return 0
     return node.height
 
+# função para reiniciar os segmentos como se não tivessem
+# sido reportados ainda
 def clean(s, ids):
     for i in ids:
         s[i-1].reported = False
