@@ -116,7 +116,7 @@ def windowQuery(segments, window):
     window_left = Segment(-1, window.x, window.x, window.y, window.y1)
     window_right = Segment(-2, window.x1, window.x1, window.y, window.y1)
     window_top = Segment(-3, window.x, window.x1, window.y1, window.y1)
-    #window_bottom = Segment(-4, window.x, window.x1, window.y, window.y)
+    window_bottom = Segment(-4, window.x, window.x1, window.y, window.y)
 
     elem_intervals_v = interval_x(sorted_endpoints_x)
     elem_intervals_h = interval_y(sorted_endpoints_y)
@@ -136,7 +136,7 @@ def windowQuery(segments, window):
     querySegmentTreeVertical(stree_v, window_left, q2)
     querySegmentTreeVertical(stree_v, window_right, q2)
     querySegmentTreeHorizontal(stree_h, window_top, q2)
-    #querySegmentTreeHorizontal(stree_h, window_bottom, q2)
+    querySegmentTreeHorizontal(stree_h, window_bottom, q2)
 
     return q1 + q2
 
@@ -352,7 +352,7 @@ def querySegmentTreeHorizontal(node, q, response):
         if not node.left.key.semiclosed and q.left.y < node.left.key.right:
             response += reportIntersectionHorizontal(node.segments, q)
             querySegmentTreeHorizontal(node.left, q, response)
-            
+
         if node.left.key.semiclosed == 1 and q.left.y <= node.left.key.right:
             response += reportIntersectionHorizontal(node.segments, q)
             querySegmentTreeHorizontal(node.left, q, response)
