@@ -123,12 +123,10 @@ def windowQuery(segments, window):
 
 
     rtree = RangeTree(sorted_endpoints_x)
-    stree_v = SegmentTree(elem_intervals_v)
-    stree_h = SegmentTree(elem_intervals_h)
+    stree_v = segmentTree(elem_intervals_v, segments, True)
+    stree_h = segmentTree(elem_intervals_h, segments, False)
 
-    for s in segments:
-        insertSegmentHorizontal(stree_h, s)
-        insertSegmentVertical(stree_v, s)
+
 
     q1 = query2DRangeTree(rtree, window.x, window.x1, window.y, window.y1)
 
@@ -187,7 +185,16 @@ def interval_y(P):
 # Entrada: uma lista I de intervalos elementares
 # Saída: uma árvore de segmentos
 #---------------------------------------------------#
-def SegmentTree(I):
+def segmentTree(I, segments, vertical):
+    root = intervalTree(I)
+    for s in segments:
+        if vertical:
+            insertSegmentVertical(root, s)
+        else:
+            insertSegmentHorizontal(root, s)
+    return root
+
+def intervalTree(I):
     if len(I) == 1:
         v = IntNode(I[0])
     else:
@@ -204,8 +211,8 @@ def SegmentTree(I):
         if not left[0].closed and not right[-1].closed:
             v = IntNode(Interval(left[0].left, right[-1].right, False))
 
-        l_left = SegmentTree(left)
-        l_right = SegmentTree(right)
+        l_left = intervalTree(left)
+        l_right = intervalTree(right)
 
         v.left = l_left
         v.right = l_right
