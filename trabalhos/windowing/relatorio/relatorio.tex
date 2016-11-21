@@ -1,0 +1,170 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+
+\title{Trabalho 1 - Triangulação de polígono}
+\author{Gustavo Higuchi}
+\date{\today}
+
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{color}   %May be necessary if you want to color links
+\usepackage[portuguese, ruled, linesnumbered]{algorithm2e}
+\usepackage{inconsolata}
+
+
+\newtheorem{definicao}{Definição}
+\theoremstyle{definition} 
+
+
+\usepackage{mathtools}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+
+% usado para linkar cada section na tabela de conteúdo com a respectiva
+% página no documento
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black,
+    linktoc=all
+}
+
+%o começo do documento
+\begin{document}
+
+% compila o título
+\maketitle
+\newpage
+% compila a tabela de conteúdos
+\tableofcontents
+\newpage
+\section{Resumo}
+\hspace*{15pt} O problema de consultas retangulares consiste em realizar
+uma busca por um subconjunto de segmentos no plano de forma eficiente. 
+Este documento descreve uma solução para este problema realizando um 
+pré-processamento de tempo $O(n\log n)$ e utilizando uma estrutura de
+dados que ocupa $O(n\log n)$, para então realizar cada consulta com um 
+custo computacional de $O(\log^2 n + k)$, onde $n$ é o número de segmentos
+no plano e $k$ é o número de segmentos dentro da região retangular que 
+se deseja saber os segmentos contidos nele. A solução do problema apresentada
+neste documento supõe que os segmentos estejam disjuntos, ou seja, não
+se intersectam.
+
+\section{Introdução}
+\hspace*{15pt} O problema das consultas retangulares geralmente é utilizado
+por aplicações que fazem uso de localização dentro de um mapa, como
+um serviço de GPS, que exibe apenas uma pequena porção de um mapa em uma
+tela retangular. Portanto, deseja-se apenas uma pequena porção de um mapa
+para exibição. O problema pode ser dado da seguinte forma:\\
+\begin{definicao}
+    Dado um conjunto de segmentos $S$ no plano e um sub-espaço retangular 
+    do plano dado por $[x:x']x[y:y']$, encontrar o subconjunto de segmentos
+    dentro deste sub-espaço retangular de forma eficiente.
+\end{definicao}
+\\
+\hspace*{15pt}Realizar uma verificação para cada segmento se está ou não 
+dentro de um sub-espaço, que chamaremos daqui em diante de \textit{janela}, 
+seria impraticável. A solução que será discutida neste documento será para 
+um conjunto de segmentos \textbf{disjuntos}, ou seja, que não se intersectam. 
+
+
+\section{Descrição da solução}
+\hspace*{15pt} O problema das consultas retangulares pode ser dividido em duas
+partes, os segmentos que possuem algum ponto \textbf{dentro} da janela, e os
+segmentos que intersectam duas fronteiras da janela.\\
+\\
+\subsection{2D Range Tree}
+\hspace*{15pt} Para a primeira parte, é usado uma estrutura de dados chamada
+\textit{2D Range Tree} que essecialmente realiza uma consulta por um intervalo 
+retangular composta de duas outras buscas por intervalos de uma dimensão. A 
+estrutura de dados é composta de pontos no plano e pode ser descrita como uma 
+árvore onde cada nó $N$ possui sua chave baseada na coordenadas x de cada ponto, e com
+um ponteiro para uma estrutura de dados associadas. Essa estrutura associada é 
+uma árvore binária balanceada que representa a união das sub-árvores esquerda e 
+direita de $N$, porém com sua chave baseada na coordenada y dos pontos. A busca 
+nessa estrutura é feita a partir de um intervalo $[x:x']$ e em seguida, na estrura
+associada buscando um intervalo $[y:y']$, os nós que pertencem à estrutura associada
+são chamados de \textit{subconjunto canônico do nó}. Basicamente, funciona da 
+seguinte forma:\\
+ \begin{itemize}
+    \item Primeiro, busca pelo nó divisor, i.e. nó cuja chave $k \in [x:x']$ 
+    \item A partir do nó divisor, para todo nó na sub-árvore esquerda, reportar
+        todos os nós à direita.
+    \item De forma semelhante, fazer para os nó na sub-árvore direita.
+    \item Fazer até as folhas que representam os extremos do intervalo,
+         $x$ e $x'$, respectivamente
+ \end{itemize}
+\\
+\hspace*{15pt} Então, com essa estrutura, podemos reportar os segmentos que possuem
+ao menos um endpoint dentro da janela. Realizando o cuidado de não reportar mais 
+de uma vez.
+\\
+\subsection{Segment Tree}
+\hspace*{15pt} Com os segmentos que possuem algum endpoint dentro da janela reportados,
+falta apenas os segmentos que intersectam duas fronteiras da janela. Para esse tipo
+de busca, será necessário uma estrutura de dados chamada \textit{segment tree}, ou
+\textit{árvore de segmentos}. Esta estrutura é baseada em \textit{intervalos elementares}.
+O intervalos elementares podem ser descritos da seguinte forma:\\
+\begin{definicao}
+    Seja $p_1, p_2, p_3, ..., p_n$ uma lista de endpoints distintos ordenados dao menor
+    para o maior, os intervalos elementares são definidos pelo conjunto de intervalos
+    fechados $[p_i:p_i]$ e intervalos abertos $(p_i:p{i+1})$, cujas pontas representam
+    o infinito, ou seja, os intervalos elementares destes pontos são:\\
+    $(-\infty: p_1), [p_1:p_1], (p_1:p_2), [p_2:p_2], ..., (p_{n-1}:p_n), [p_n:p_n], (p_n:+\infty)$
+\end{definicao}
+\hspace*{15pt} Assim, constrói-se uma árvore binária balanceada cujas folhas representam
+os intervalos elementares, denotados de $Int(v)$. \\
+\\
+\hspace*{15pt} Com a árvore de intervalos construida, insere os segmentos tal que\\
+\mbox{$Int(v) \subseteq [x:x'] \textbf{ e } Int(Pai(v)) \not\subseteq [x:x']$}.\\
+\\
+\hspace*{15pt} Sendo assim, a estrutura fica assim:
+\begin{itemize}
+    \item O esqueleto da árvore de segmentos é uma árvore binária balanceada $\tau$,
+        As folhas de $\tau$ correspondem a um intervalo elementar induzido pelos
+        endpoints ordenados.
+    \item Os nós internos de $\tau$ correspondem aos intervalos que são a união dos
+        intervalos elementares do subconjunto canônico.
+    \item Cada nó ou folha $v$ em $\tau$ guarda o segmento $s$ tal que \\
+        \mbox{$Int(v) \subseteq [s_x:s_x'] \textbf{ e } Int(Pai(v)) \not\subseteq [s_x:s_x']$},
+        onde $s_x$ e $s_x'$ correspondem às coordenadas x do segmento $s$
+\end{itemize}
+\\
+De forma semelhante, é feito uma segunda estrutura do mesmo tipo, porém baseado no eixo y.\\
+\\
+\hspace*{15pt} Esta abordagem é suficiente para se obter consultas retangulares eficientes.
+\\ 
+\section{O algoritmo}
+\begin{algorithm}[H]
+  \SetAlgoLined
+  \Entrada{Um polígono $P$ subdividido em polígonos monotônicos}
+  \Saida{O polígono $P$ subdividido em triângulos}
+  \Inicio{
+  $Q\gets \text{lista de faces de P}$\\
+  \Para{cada elemento de Q}{
+    $f \gets \text{primeiro elemento de Q}$\\
+    $\text{remove o primeiro elemento de Q}$\\
+    \Se{\text{f não for um triangulo}   }{
+        $v_i \gets \text{destino da aresta inicial de f}$\\
+        $v_j \gets \text{origem da aresta anterior de $v_i$}$\\
+        $\text{$ear_clipping(P, v_i$, $v_j)$}$\\
+        $\text{insere em Q a face de }$\\
+    }
+    }
+  }
+  \label{alg1}
+  \caption{triangulate}
+\end{algorithm}
+
+\subsection{Complexidade e corretude}
+\newpage
+\bibliography{relatorio}
+\bibliographystyle{ieeetr}
+
+\end{document}
