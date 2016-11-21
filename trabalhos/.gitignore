@@ -2,4 +2,3 @@
 *.txt
 *tar.gz
 triangulate/test.py
-triangulate/.vscode
