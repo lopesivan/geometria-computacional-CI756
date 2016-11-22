@@ -1,4 +1,7 @@
 # coding=UTF-8
+LEFT = 1
+RIGHT = 2
+
 class Point(object):
     def __init__(self, x, y, segment=None):
         self.x = x
@@ -7,7 +10,6 @@ class Point(object):
 
     def __repr__(self):
         return "(%s,%s) - %s" % (self.x, self.y, self.segment.id)
-
 # funções para executar uma ordenação em um array de Point
 def getKeyX(point):
     return point.x
@@ -74,20 +76,20 @@ class IntNode(object):
             return "%s %s" % (self.key, self.height)
 
 class Interval(object):
-    def __init__(self, x, x1, closed, semi=False):
+    def __init__(self, x, x1, closed, semiclosed=False):
         if x < x1:
             self.left = x 
             self.right = x1
         else:
             self.left = x1
             self.right = x
-        self.semiclosed = semi
+        self.semiclosed = semiclosed
         self.closed = closed
 
     def __repr__(self):
-        if self.semiclosed == 1:
+        if self.semiclosed == LEFT:
             return "(%s:%s]" % (self.left, self.right)
-        if self.semiclosed == 2:
+        if self.semiclosed == RIGHT:
             return "[%s:%s)" % (self.left, self.right)
         if self.closed:
             return "[%s:%s]" % (self.left, self.right)
@@ -123,10 +125,8 @@ def windowQuery(segments, window):
 
 
     rtree = RangeTree(sorted_endpoints_x)
-    stree_v = segmentTree(elem_intervals_v, segments, True)
-    stree_h = segmentTree(elem_intervals_h, segments, False)
-
-
+    stree_v = segmentTreeX(elem_intervals_v, segments)
+    stree_h = segmentTreeY(elem_intervals_h, segments)
 
     q1 = query2DRangeTree(rtree, window.x, window.x1, window.y, window.y1)
 
@@ -185,29 +185,38 @@ def interval_y(P):
 # Entrada: uma lista I de intervalos elementares
 # Saída: uma árvore de segmentos
 #---------------------------------------------------#
-def segmentTree(I, segments, vertical):
+def segmentTreeX(I, segments):
     root = intervalTree(I)
     for s in segments:
-        if vertical:
-            insertSegmentVertical(root, s)
-        else:
-            insertSegmentHorizontal(root, s)
+        insertSegmentVertical(root, s)
     return root
 
+def segmentTreeY(I, segments):
+    root = intervalTree(I)
+    for s in segments:
+        insertSegmentHorizontal(root, s)
+    return root
+#---------------------------------------------------#
+# Entrada: uma lista I de intervalos elementares
+# Saida: a raiz de uma arvore de intervalos 
+#---------------------------------------------------#
 def intervalTree(I):
     if len(I) == 1:
+        # instancia um no' 
         v = IntNode(I[0])
     else:
         left, right = split2(I)
 
+        # define se o intervalo do no' corrente e' fechado, 
         if left[0].closed and right[-1].closed:
             v = IntNode(Interval(left[0].left, right[-1].right, True))
-        # fechado à direita
+        # fechado 'a direita 
         if not left[0].closed and right[-1].closed:
-            v = IntNode(Interval(left[0].left, right[-1].right, False, 1))
-        # fechado à esquerda
+            v = IntNode(Interval(left[0].left, right[-1].right, False, LEFT))
+        # fechado 'a esquerda,
         if left[0].closed and not right[-1].closed:
-            v = IntNode(Interval(left[0].left, right[-1].right, False, 2))
+            v = IntNode(Interval(left[0].left, right[-1].right, False, RIGHT))
+        # ou aberto
         if not left[0].closed and not right[-1].closed:
             v = IntNode(Interval(left[0].left, right[-1].right, False))
 
@@ -216,6 +225,7 @@ def intervalTree(I):
 
         v.left = l_left
         v.right = l_right
+        # atualiza a altura da arvore
         v.height = max(height(v.left), height(v.right)) + 1
     return v
 
@@ -302,40 +312,13 @@ def querySegmentTreeVertical(node, q, response):
         response += reportIntersectionVertical(node.segments, q)
         return
 
-    if node.left.key.closed:
-        if q.upper.x <= node.left.key.right:
-            response += reportIntersectionVertical(node.segments, q)
-            querySegmentTreeVertical(node.left, q, response)
-    else:
-        if not node.left.key.semiclosed and q.upper.x < node.left.key.right:
-            response += reportIntersectionVertical(node.segments, q)
-            querySegmentTreeVertical(node.left, q, response)
+    if belongsLeftX(node, q):
+        response += reportIntersectionVertical(node.segments, q)
+        querySegmentTreeVertical(node.left, q, response)
 
-        if node.left.key.semiclosed == 1 and q.upper.x <= node.left.key.right:
-            response += reportIntersectionVertical(node.segments, q)
-            querySegmentTreeVertical(node.left, q, response)
-
-        if node.left.key.semiclosed == 2 and q.upper.x < node.left.key.right:
-            response += reportIntersectionVertical(node.segments, q)
-            querySegmentTreeVertical(node.left, q, response)          
-
-    if node.right.key.closed:
-        if q.upper.x >= node.right.key.left:
-            response += reportIntersectionVertical(node.segments, q)
-            querySegmentTreeVertical(node.right, q, response)
-    else:
-        if not node.right.key.semiclosed and q.upper.x > node.right.key.left:
-            response += reportIntersectionVertical(node.segments, q)
-            querySegmentTreeVertical(node.right, q, response)
-
-        if node.right.key.semiclosed == 1 and q.upper.x > node.right.key.left:
-            response += reportIntersectionVertical(node.segments, q)
-            querySegmentTreeVertical(node.right, q, response)
-
-        if node.right.key.semiclosed == 2 and q.upper.x >= node.right.key.left:
-            response += reportIntersectionVertical(node.segments, q)
-            querySegmentTreeVertical(node.right, q, response)
-    return 
+    if belongsRightX(node, q):
+        response += reportIntersectionVertical(node.segments, q)
+        querySegmentTreeVertical(node.right, q, response)
 
 #---------------------------------------------------#
 # Faz uma busca na árvore de segmentos baseado em uma
@@ -351,40 +334,76 @@ def querySegmentTreeHorizontal(node, q, response):
         response += reportIntersectionHorizontal(node.segments, q)
         return
 
-    if node.left.key.closed:
-        if q.left.y <= node.left.key.right:
-            response += reportIntersectionHorizontal(node.segments, q)
-            querySegmentTreeHorizontal(node.left, q, response)
-    else:
-        if not node.left.key.semiclosed and q.left.y < node.left.key.right:
-            response += reportIntersectionHorizontal(node.segments, q)
-            querySegmentTreeHorizontal(node.left, q, response)
+    if belongsLeftY(node, q):
+        response += reportIntersectionHorizontal(node.segments, q)
+        querySegmentTreeHorizontal(node.left, q, response)
 
-        if node.left.key.semiclosed == 1 and q.left.y <= node.left.key.right:
-            response += reportIntersectionHorizontal(node.segments, q)
-            querySegmentTreeHorizontal(node.left, q, response)
+    if belongsRightY(node, q):
+        response += reportIntersectionHorizontal(node.segments, q)
+        querySegmentTreeHorizontal(node.right, q, response)
 
-        if node.left.key.semiclosed == 2 and q.left.y < node.left.key.right:
-            response += reportIntersectionHorizontal(node.segments, q)
-            querySegmentTreeHorizontal(node.left, q, response)            
-
+#---------------------------------------------------#
+# Funções helpers que retornam se um segmento de busca
+# pertence ao intervalo da sub-árvore esquerda ou
+# direita 
+#---------------------------------------------------#
+def belongsRightX(node, q):
     if node.right.key.closed:
-        if q.left.y >= node.right.key.left:
-            response += reportIntersectionHorizontal(node.segments, q)
-            querySegmentTreeHorizontal(node.right, q, response)
+        if q.upper.x >= node.right.key.left:
+            return True
     else:
-        if not node.right.key.semiclosed and q.left.y > node.right.key.left:
-            response += reportIntersectionHorizontal(node.segments, q)
-            querySegmentTreeHorizontal(node.right, q, response)
+        if not node.right.key.semiclosed and q.upper.x > node.right.key.left:
+            return True
+        if node.right.key.semiclosed == 1 and q.upper.x > node.right.key.left:
+            return True
+        if node.right.key.semiclosed == 2 and q.upper.x >= node.right.key.left:
+            return True
+    return False
 
-        if node.right.key.semiclosed == 1 and q.left.y > node.right.key.left:
-            response += reportIntersectionHorizontal(node.segments, q)
-            querySegmentTreeHorizontal(node.right, q, response)
+def belongsLeftX(node, q):
+    if node.left.key.closed:
+        if q.upper.x <= node.left.key.right:
+            return True
+    else:
+        if not node.left.key.semiclosed and q.upper.x < node.left.key.right:
+            return True
 
-        if node.right.key.semiclosed == 2 and q.left.y >= node.right.key.left:
-            response += reportIntersectionHorizontal(node.segments, q)
-            querySegmentTreeHorizontal(node.right, q, response)
-    return 
+        if node.left.key.semiclosed == 1 and q.upper.x <= node.left.key.right:
+            return True
+
+        if node.left.key.semiclosed == 2 and q.upper.x < node.left.key.right:
+            return True
+    return False
+
+def belongsRightY(node, q):
+    if node.right.key.closed:
+        if q.upper.y >= node.right.key.left:
+            return True
+    else:
+        if not node.right.key.semiclosed and q.upper.y > node.right.key.left:
+            return True
+        if node.right.key.semiclosed == 1 and q.upper.y > node.right.key.left:
+            return True
+        if node.right.key.semiclosed == 2 and q.upper.y >= node.right.key.left:
+            return True
+    return False
+
+def belongsLeftY(node, q):
+    if node.left.key.closed:
+        if q.upper.y <= node.left.key.right:
+            return True
+    else:
+        if not node.left.key.semiclosed and q.upper.y < node.left.key.right:
+            return True
+
+        if node.left.key.semiclosed == 1 and q.upper.y <= node.left.key.right:
+            return True
+
+        if node.left.key.semiclosed == 2 and q.upper.y < node.left.key.right:
+            return True
+    return False
+
+
 
 #---------------------------------------------------#
 # Realiza a busca no subconjunto canônico e reporta 
@@ -518,45 +537,44 @@ def query2DRangeTree(node, x, x1, y, y1):
     response = []
     v_split = findSplitNode(node, x, x1)
     if leaf(v_split):
-        if (x < v_split.point.x and v_split.point.x < x1 and
-            y < v_split.point.y and v_split.point.y < y1):
+        if inside(v_split, x, x1, y, y1):
             if not v_split.point.segment.reported:
                 response.append(v_split.point.segment.id)
                 v_split.point.segment.reported = True
     else:
-        if (x < v_split.point.x and v_split.point.x < x1 and
-            y < v_split.point.y and v_split.point.y < y1):
+        if inside(v_split, x, x1, y, y1):
             if not v_split.point.segment.reported:
                 response.append(v_split.point.segment.id)
                 v_split.point.segment.reported = True
         v = v_split.left
         while not leaf(v):
             if x <= v.point.x:
-                response.extend(query1DRangeTree(v.tree_assoc, y, y1))
+                response += query1DRangeTree(v.tree_assoc, y, y1)
                 v = v.left
             else:
                 v = v.right
         if v and v.point.segment.reported:
-            if (x < v.point.x and v.point.x < x1 and
-                y < v.point.y and v.point.y < y1):
+            if inside(v, x, x1, y, y1):
                 response.append(v.point.segment.id)
                 v.point.segment.reported = True
 
         v = v_split.right
         while not leaf(v):
-            if v.point.x < x1:
-                response.extend(query1DRangeTree(v.tree_assoc, y, y1))
+            if v.point.x <= x1:
+                response += query1DRangeTree(v.tree_assoc, y, y1)
                 v = v.right
             else:
                 v = v.left
         if v and not v.point.segment.reported:
-            if (x < v.point.x and v.point.x < x1 and
-                y < v.point.y and v.point.y < y1):
+            if inside(v, x, x1, y, y1):
                 response.append(v.point.segment.id)
                 v.point.segment.reported = True
-
     return response
 
+def inside(node, x, x1, y, y1):
+    if (x <= node.point.x and node.point.x <= x1 and
+        y <= node.point.y and node.point.y <= y1):
+        return True
 #---------------------------------------------------#
 # Busca em uma Range Tree 1D baseado em uma janela
 #
@@ -567,12 +585,12 @@ def query1DRangeTree(node, x, x1):
     response = []
     v_split = findSplitNode(node, x, x1)
     if leaf(v_split):
-        if x < v_split.key and v_split.key < x1:
+        if x <= v_split.key and v_split.key <= x1:
             if not v_split.point.segment.reported:
                 response.append(v_split.point.segment.id)
                 v_split.point.segment.reported = True
     else:
-        if x < v_split.key and v_split.key < x1:
+        if x <= v_split.key and v_split.key <= x1:
             if not v_split.point.segment.reported:
                 response.append(v_split.point.segment.id)
                 v_split.point.segment.reported = True
@@ -583,12 +601,12 @@ def query1DRangeTree(node, x, x1):
 
         v = v_split.left
         while not leaf(v):
-            if x < v.key:
+            if x <= v.key:
                 reportSubtree(v.right, response)
                 v = v.left
             else:
                 v = v.right
-        if v and x < v.key:
+        if v and x <= v.key:
             if not v.point.segment.reported:
                 response.append(v.point.segment.id)
                 v.point.segment.reported = True
@@ -597,12 +615,12 @@ def query1DRangeTree(node, x, x1):
         #
         v = v_split.right
         while not leaf(v):
-            if v.key < x1:
+            if v.key <= x1:
                 reportSubtree(v.left, response)
                 v = v.right
             else:
                 v = v.left
-        if v and v.key < x1:
+        if v and v.key <= x1:
             if not v.point.segment.reported:
                 response.append(v.point.segment.id)
                 v.point.segment.reported = True

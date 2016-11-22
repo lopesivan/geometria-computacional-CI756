@@ -12,7 +12,7 @@ windows = []
 
 segments.append(Segment(1, 2, 2, 4, 6))
 segments.append(Segment(2, 1, 4, 7, 7))
-segments.append(Segment(3, 1, 8, 8, 8))
+segments.append(Segment(3, 3, 8, 8, 8))
 segments.append(Segment(4, 2, 2, 9, 10))
 segments.append(Segment(5, 3, 5, 10, 9))
 segments.append(Segment(6, 1, 7, 14, 9))
