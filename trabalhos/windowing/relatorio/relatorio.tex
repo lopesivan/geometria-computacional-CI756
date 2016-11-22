@@ -19,7 +19,7 @@
 \definecolor{codegreen}{rgb}{0,0.6,0}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
 \definecolor{codepurple}{rgb}{0.58,0,0.82}
-\definecolor{backcolour}{rgb}{0.89,0.89,0.89}
+\definecolor{backcolour}{rgb}{0.96,0.96,0.96}
  
 \lstdefinestyle{mystyle}{
     backgroundcolor=\color{backcolour},   
@@ -27,7 +27,7 @@
     keywordstyle=\color{blue},
     numberstyle=\tiny\color{codegray},
     stringstyle=\color{codepurple},
-    basicstyle=\footnotesize,
+    basicstyle=\footnotesize\ttfamily,
     breakatwhitespace=false,         
     breaklines=true,                 
     captionpos=b,                    
@@ -161,24 +161,84 @@ os intervalos elementares, denotados de $Int(v)$.
         onde $s_x$ e $s_x'$ correspondem às coordenadas x do segmento $s$
 \end{itemize}
 
-De forma semelhante, é feito uma segunda estrutura do mesmo tipo, porém baseado no eixo y.
+Os segmentos são armazenados em ordem em uma árvore binária balanceada 
+com base na ordem vertical deles.\\
+De forma semelhante, é feito uma segunda estrutura do mesmo tipo, porém 
+trocando as coordenadas.
 
 \hspace*{15pt} Esta abordagem é suficiente para se obter consultas retangulares eficientes.
 
 \section{O algoritmo}
-\hspace*{15pt} O algoritmo foi desenvolvido em Python, e a função principal do código 
-ficou assim:
+\subsection{Estruturas auxiliares}
+\hspace*{15pt} O algoritmo foi desenvolvido em Python, utilizei classes 
+para representar as estruturas de dados, em ordem, temos:
+
+\hspace*{15pt}O Ponto possui um ponteiro para o segmento para o qual 
+pertence, além de suas coordenadas. 
+\lstinputlisting[language=Python]{classPoint.py}
+
+\hspace*{15pt}O segmento que instancia um objeto que possui um inteiro
+que representa o índice $[1:n]$, um ponteiro \texttt{upper}
+para o endpoint com a coordenada $y$ maior e o \texttt{lower} para
+o endpoint com a coordenada $y$ menor, além de uma referência para
+qual endpoint está à esquerda e qual está à direita e um booleano
+que indica se o segmento já foi reportado.
+\lstinputlisting[language=Python]{classSegment.py}
+
+\hspace*{15pt} O intervalo possui a inteiro \texttt{left} que guarda
+a menor coordenada e um inteiro \texttt{right} que guarda a maior
+coordenada do intervalo.
+\lstinputlisting[language=Python]{classInterval.py}
+
+
+\subsection{As funções}
+A função principal do código ficou assim:
 \lstinputlisting[language=Python]{windowQuery.py}
-\hspace*{15pt} A função \texttt{query2DRangeTree()} funciona como
-explicado anteriormente, fazendo uma busca por segmentos que possuem
-algum endpoint dentro da janela. E a função \texttt{querySegmentTreeVertical()}
+\hspace*{15pt} Por questões de simplicidade de código, optei utilizar uma 
+função interna do Python que ordena uma array, para ordenar os endpoints 
+dos segmentos, e estou assumindo que executa em tempo $O(n\log n)$.
+
+\hspace*{15pt} Para construir a Range Tree de duas dimensões, divido
+o conjunto de Pontos $P$ baseado na mediana em tempo linear $O(n)$ e 
+executo essa operação $O(\log n)$ vezes, totalizando $O(n\log n)$ 
+operações para construir a Range Tree.
+\lstinputlisting[language=Python]{rangeTree.py}
+
+\hspace*{15pt} Como cada ponto guarda um ponteiro para o segmento que ele
+pertence, a função \texttt{query2DRangeTree()} funciona como explicado 
+anteriormente, fazendo uma busca por endpoints que estão dentro da janela
+e reportando os segmentos dos pontos, executando um total de $O(\log^2n + k)$
+operações\cite{bergBook}. 
+\lstinputlisting[language=Python]{query2DRangeTree.py}
+
+\hspace*{15pt} Para construir a árvore com os intervalos elementares, verifica
+se o intervalo do nó $Int(v)$ é fechado, semi-fechado à esquerda, semi-fechado à direita
+ou aberto, para então instanciar o intervalo, que leva os argumentos 
+\texttt{Interval(esquerda, direita, fechado, lado\_aberto)}, onde \texttt{esquerda}
+é o ponto à esquerda do interval, \texttt{direita} é o ponto à direita do intervalo,
+\texttt{fechado} é um booleano e \texttt{lado\_aberto} é um inteiro que 
+define o lado que está aberto no intervalo semi-fechado. Então, levando em conta
+que são $2n + 1$ folhas e $O(\log n)$ nós internos, temos um total de 
+$O(\log n)$ operações.
+\lstinputlisting[language=Python]{intervalTree.py}
+
+E para inserir cada segmento na árvore, percorre a árvore de intervalos
+criada e insere o segmento nó mais alto possível, executando $O(\log n)$ operações 
+para cada segmento, totalizando $O(n\log n)$ operações\cite{bergBook}.
+\lstinputlisting[language=Python]{segmentTree.py}
+
+A função \texttt{querySegmentTreeVertical()}
 realiza as buscas por segmentos que intersectam fronteiras verticais
-da janela, e do maneira semelhante, a função  \texttt{querySegmentTreeHorizontal()}
-realiza para as fronteiras horizontais da janela, ambas as funções de 
-busca na árvore de segmento guarda a resposta em \texttt{q2}, que é passado
-como parametro.
-\newpage
-\subsection{Complexidade e corretude}
+da janela, i.e. baseado no eixo x. Dado um segmento de busca $q := q_x \texttt{x} [q_y:q_y']$, 
+percorre a árvore até sua folha, para cada nó no caminho, reporta todos
+os segmentos possuem intersecção com $q$, executando $O(\log n)$ operações
+para caminhar na árvore, mais $O(\log n)$ para caminhar na estrutura associada
+e $O(1 + k)$ para reportar os segmentos, onde $k$ é o número de segmentos 
+intersectado por $q$, totalizando um tempo de $O(\log^2n + k)$ \cite{bergBook}. 
+Trocando as coordenadas, a função \texttt{querySegmentTreeHorizontal()}
+funciona de forma semelhante.
+\lstinputlisting[language=Python]{querySegmentTreeVertical.py}
+
 \newpage
 \bibliography{relatorio}
 \bibliographystyle{ieeetr}
