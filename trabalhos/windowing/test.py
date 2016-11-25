@@ -1,6 +1,6 @@
 # coding=UTF-8
-import windowing
-from windowing import *
+import Windowing
+from Windowing import *
 
 segments = []
 windows = []
@@ -34,7 +34,9 @@ windows.append(Window(4, 8, 2, 4) ) #3
 windows.append(Window(11, 14, 4, 5) ) #4
 windows.append(Window(11, 14, 6, 10) ) #5
 windows.append(Window(6, 7, 6, 11)) #6
+
+rtree, stree_v, stree_h = pre_process(segments)
 for w in windows:
-    resposta = windowQuery( segments, w )
+    resposta = windowQuery( w, rtree, stree_v, stree_h)
     print ' '.join( str(v) for v in resposta )
     clean(segments, resposta)

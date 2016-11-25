@@ -59,7 +59,7 @@ class Node(object):
         self.height = 1
 
     def __repr__(self):
-        return "[%s - %s]" % (self.point.segment.id, self.height)
+        return "[%s - %s]" % (self.key, self.height)
 
 class IntNode(object):
     def __init__(self, interval):
@@ -96,16 +96,7 @@ class Interval(object):
         else:
             return "(%s:%s)" % (self.left, self.right)
 
-
-
-#---------------------------------------------------#
-# Função que recebe segmentos e uma janela, retornando
-# os segmentos dentro dela
-#
-# Entrada: uma lista de segmentos e uma janela [x:x']x[y:y']
-# Saída: os segmentos que estão dentro da janela
-#---------------------------------------------------#
-def windowQuery(segments, window):
+def pre_process(segments):
     endpoints = []
     for s in segments:
         endpoints.append(s.upper)
@@ -113,12 +104,6 @@ def windowQuery(segments, window):
 
     sorted_endpoints_x = sorted(endpoints, key=getKeyX)
     sorted_endpoints_y = sorted(endpoints, key=getKeyY)
-    
-
-    window_left = Segment(-1, window.x, window.x, window.y, window.y1)
-    window_right = Segment(-2, window.x1, window.x1, window.y, window.y1)
-    window_top = Segment(-3, window.x, window.x1, window.y1, window.y1)
-    window_bottom = Segment(-4, window.x, window.x1, window.y, window.y)
 
     elem_intervals_v = interval_x(sorted_endpoints_x)
     elem_intervals_h = interval_y(sorted_endpoints_y)
@@ -127,6 +112,21 @@ def windowQuery(segments, window):
     rtree = RangeTree(sorted_endpoints_x)
     stree_v = segmentTreeX(elem_intervals_v, segments)
     stree_h = segmentTreeY(elem_intervals_h, segments)
+
+    return rtree, stree_v, stree_h
+#---------------------------------------------------#
+# Função que recebe segmentos e uma janela, retornando
+# os segmentos dentro dela
+#
+# Entrada: uma lista de segmentos e uma janela [x:x']x[y:y']
+# Saída: os segmentos que estão dentro da janela
+#---------------------------------------------------#
+def windowQuery(window, rtree, stree_v, stree_h):
+
+    window_left = Segment(-1, window.x, window.x, window.y, window.y1)
+    window_right = Segment(-2, window.x1, window.x1, window.y, window.y1)
+    window_top = Segment(-3, window.x, window.x1, window.y1, window.y1)
+    window_bottom = Segment(-4, window.x, window.x1, window.y, window.y)
 
     q1 = query2DRangeTree(rtree, window.x, window.x1, window.y, window.y1)
 
@@ -547,7 +547,7 @@ def query2DRangeTree(node, x, x1, y, y1):
                 response.append(v_split.point.segment.id)
                 v_split.point.segment.reported = True
         v = v_split.left
-        while not leaf(v):
+        while v and not leaf(v):
             if x <= v.point.x:
                 response += query1DRangeTree(v.tree_assoc, y, y1)
                 v = v.left
@@ -559,7 +559,7 @@ def query2DRangeTree(node, x, x1, y, y1):
                 v.point.segment.reported = True
 
         v = v_split.right
-        while not leaf(v):
+        while v and not leaf(v):
             if v.point.x <= x1:
                 response += query1DRangeTree(v.tree_assoc, y, y1)
                 v = v.right
@@ -590,42 +590,43 @@ def query1DRangeTree(node, x, x1):
                 response.append(v_split.point.segment.id)
                 v_split.point.segment.reported = True
     else:
-        if x <= v_split.key and v_split.key <= x1:
-            if not v_split.point.segment.reported:
-                response.append(v_split.point.segment.id)
-                v_split.point.segment.reported = True
-        #--------------------------------------------#
-        # percorre a subárvore à esquerda do nó split
-        # e reporta todos os pontos à direita.
-        #
+        if v_split:
+            if x <= v_split.key and v_split.key <= x1:
+                if not v_split.point.segment.reported:
+                    response.append(v_split.point.segment.id)
+                    v_split.point.segment.reported = True
+            #--------------------------------------------#
+            # percorre a subárvore à esquerda do nó split
+            # e reporta todos os pontos à direita.
+            #
 
-        v = v_split.left
-        while not leaf(v):
-            if x <= v.key:
-                reportSubtree(v.right, response)
-                v = v.left
-            else:
-                v = v.right
-        if v and x <= v.key:
-            if not v.point.segment.reported:
-                response.append(v.point.segment.id)
-                v.point.segment.reported = True
-        #
-        # semelhante para o limite de x'
-        #
-        v = v_split.right
-        while not leaf(v):
-            if v.key <= x1:
-                reportSubtree(v.left, response)
-                v = v.right
-            else:
-                v = v.left
-        if v and v.key <= x1:
-            if not v.point.segment.reported:
-                response.append(v.point.segment.id)
-                v.point.segment.reported = True
-        #
-        #--------------------------------------------#
+            v = v_split.left
+            while v and not leaf(v):
+                if x <= v.key:
+                    reportSubtree(v.right, response)
+                    v = v.left
+                else:
+                    v = v.right
+            if v and x <= v.key:
+                if not v.point.segment.reported:
+                    response.append(v.point.segment.id)
+                    v.point.segment.reported = True
+            #
+            # semelhante para o limite de x'
+            #
+            v = v_split.right
+            while v and not leaf(v):
+                if v.key <= x1:
+                    reportSubtree(v.left, response)
+                    v = v.right
+                else:
+                    v = v.left
+            if v and v.key <= x1:
+                if not v.point.segment.reported:
+                    response.append(v.point.segment.id)
+                    v.point.segment.reported = True
+            #
+            #--------------------------------------------#
     return response
 
 #---------------------------------------------------#
@@ -653,7 +654,7 @@ def reportSubtree(node, response):
 #---------------------------------------------------#
 def findSplitNode(node, x, x1):
     v = node
-    while not leaf(v) and (x1 <= v.key or x > v.key):
+    while v and not leaf(v) and (x1 <= v.key or x > v.key):
         if x1 <= v.key:
             v = v.left
         else:
@@ -729,7 +730,7 @@ def getRootIndex(t):
 #        False caso contrário
 #---------------------------------------------------#
 def leaf(node):
-    if not node or (not node.left and not node.right):
+    if node and (not node.left and not node.right):
         return True
     return False
 
