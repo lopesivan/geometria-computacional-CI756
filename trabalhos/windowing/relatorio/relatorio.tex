@@ -172,11 +172,11 @@ trocando as coordenadas.
 \subsection{Estruturas auxiliares}
 \hspace*{15pt} O algoritmo foi desenvolvido em Python, utilizei classes 
 para representar as estruturas de dados, em ordem, temos:
-
+\subsubsection*{Point}
 \hspace*{15pt}O Ponto possui um ponteiro para o segmento para o qual 
 pertence, além de suas coordenadas. 
 \lstinputlisting[language=Python]{classPoint.py}
-
+\subsubsection*{Segment}
 \hspace*{15pt}O segmento que instancia um objeto que possui um inteiro
 que representa o índice $[1:n]$, um ponteiro \texttt{upper}
 para o endpoint com a coordenada $y$ maior e o \texttt{lower} para
@@ -184,7 +184,7 @@ o endpoint com a coordenada $y$ menor, além de uma referência para
 qual endpoint está à esquerda e qual está à direita e um booleano
 que indica se o segmento já foi reportado.
 \lstinputlisting[language=Python]{classSegment.py}
-
+\subsubsection*{Interval}
 \hspace*{15pt} O intervalo possui a inteiro \texttt{left} que guarda
 a menor coordenada e um inteiro \texttt{right} que guarda a maior
 coordenada do intervalo.
@@ -192,11 +192,19 @@ coordenada do intervalo.
 
 
 \subsection{As funções}
-A função principal do código ficou assim:
+\subsubsection*{Pré-processamento}
+A função de pré processamento ficou assim:
+\lstinputlisting[language=Python]{pre_process.py}
+
+\subsubsection*{Consulta retangular}
+
+A função principal de busca da janela ficou assim:
 \lstinputlisting[language=Python]{windowQuery.py}
 \hspace*{15pt} Por questões de simplicidade de código, optei utilizar uma 
 função interna do Python que ordena uma array, para ordenar os endpoints 
 dos segmentos, e estou assumindo que executa em tempo $O(n\log n)$.
+
+\subsubsection*{Construção da Range Tree 2D}
 
 \hspace*{15pt} Para construir a Range Tree de duas dimensões, divido
 o conjunto de Pontos $P$ baseado na mediana em tempo linear $O(n)$ e 
@@ -204,12 +212,16 @@ executo essa operação $O(\log n)$ vezes, totalizando $O(n\log n)$
 operações para construir a Range Tree.
 \lstinputlisting[language=Python]{rangeTree.py}
 
+\subsubsection*{Consulta na Range Tree 2D}
+
 \hspace*{15pt} Como cada ponto guarda um ponteiro para o segmento que ele
 pertence, a função \texttt{query2DRangeTree()} funciona como explicado 
 anteriormente, fazendo uma busca por endpoints que estão dentro da janela
 e reportando os segmentos dos pontos, executando um total de $O(\log^2n + k)$
 operações\cite{bergBook}. 
 \lstinputlisting[language=Python]{query2DRangeTree.py}
+
+\subsubsection*{Construção da Segment Tree}
 
 \hspace*{15pt} Para construir a árvore com os intervalos elementares, verifica
 se o intervalo do nó $Int(v)$ é fechado, semi-fechado à esquerda, semi-fechado à direita
@@ -226,6 +238,8 @@ E para inserir cada segmento na árvore, percorre a árvore de intervalos
 criada e insere o segmento nó mais alto possível, executando $O(\log n)$ operações 
 para cada segmento, totalizando $O(n\log n)$ operações\cite{bergBook}.
 \lstinputlisting[language=Python]{segmentTree.py}
+
+\subsubsection*{Consulta na Segment Tree}
 
 A função \texttt{querySegmentTreeVertical()}
 realiza as buscas por segmentos que intersectam fronteiras verticais
