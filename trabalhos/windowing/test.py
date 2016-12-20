@@ -28,15 +28,15 @@ segments.append(Segment(15, 7, 7, 2, 5))
 segments.append(Segment(16, 13, 13, 2, 6))
 segments.append(Segment(17, 2, 4, 14, 16))
 
-windows.append(Window(1, 3, 6, 10) ) #1
+#windows.append(Window(1, 3, 6, 10) ) #1
 windows.append(Window(3, 13, 11, 15) ) #2 
-windows.append(Window(4, 8, 2, 4) ) #3
-windows.append(Window(11, 14, 4, 5) ) #4
-windows.append(Window(11, 14, 6, 10) ) #5
-windows.append(Window(6, 7, 6, 11)) #6
+#windows.append(Window(4, 8, 2, 4) ) #3
+#windows.append(Window(11, 14, 4, 5) ) #4
+#windows.append(Window(11, 14, 6, 10) ) #5
+#windows.append(Window(6, 7, 6, 11)) #6
 
-rtree, stree_v, stree_h = pre_process(segments)
+rtree, stree_v, stree_h, blou = pre_process(segments)
 for w in windows:
-    resposta = windowQuery( w, rtree, stree_v, stree_h)
+    resposta = windowQuery( w, rtree, blou, blou.tree_assoc)
     print ' '.join( str(v) for v in resposta )
     clean(segments, resposta)

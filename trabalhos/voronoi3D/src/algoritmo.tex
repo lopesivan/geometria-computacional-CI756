@@ -1,0 +1,190 @@
+
+
+\section{Algoritmo Incremental baseado em flips}
+
+O algoritmo que será apresentado é baseado na inserção dos pontos de $S$ um de cada vez.
+Para cada novo ponto $p$ inserido, é modificado a configuração dos tetraedros presentes nas vizinhanças 
+de $p$ através de $flips$ que foram descritos acima. 
+
+O algoritmo baseado em flips é relativamente mais demorado que o algoritmo que 
+gera um buraco, apresentado por \cite{Engwirda2015}, porém é mais simples de implementar.
+
+\subsection{Duas dimensões}
+
+O primeiro algoritmo baseado em flips foi feito para construir a TD em duas dimensões.
+Desenvolvido por Lawson \cite{Lawson1977} que provou que, começando com uma 
+triangulação arbitrária de um conjunto $S$ de pontos no plano, ``flipping" 
+as arestas pode transformar essa triangulação em qualquer outra triangulação de S,
+incluindo uma triangulação de Delaunay. 
+
+Basicamente, primeiro o algoritmo busca o triangulo $\tau$ que contém o ponto
+$p$ recem inserido e então o divide em três novos triangulos que contém o 
+ponto $p$. Em seguida, os novos triangulos gerados são testados com os triangulos
+opostos em relação à $p$. Caso algum triangulo não seja um triangulo de Delaunay,
+então a aresta compartilhada pelos triangulos é ``flipado" e os dois novos triangulos
+gerados desta forma serão testados depois. 
+
+\subsection{Três dimensões}
+
+Apesar do conceito de ``flipping" generalizar para três dimensões, o algoritmo 
+de Lawson \cite{Lawson1977} não generaliza, provado por Joe \cite{Joe1989}.
+Mais tarde, porém, Joe \cite{Joe1991} prova que dado uma $TD(S)$ e um ponto 
+$p$ em $\mathbb{R}^3$, sempre existe pelo menos uma sequencia de $flips$ para 
+construir a $TD(S \cup \{p\})$. Neste caso, ainda haverá facetas que não são
+Delaunay que não se pode aplicar um \textit{flips}, mas que sempre haverá algum
+$flip$ possível de se executar tal que o algoritmo continue executando.
+
+Então, com isso é possível adaptar o algoritmo de duas dimensões para que 
+se gere o $TD(S)$ em três dimensões. Daí temos 
+\begin{definicao}
+    Seja $S$ um conjunto de pontos em $\mathbb{R}^3$, e $\mathcal{T}$ a $TD(S)$,
+    o algoritmo \texttt{InsertOnePoint()} é necessário para manter $\mathcal{T}$
+    dentro dos critérios de Delaunay quando um ponto $p$ é inserido.    
+\end{definicao}
+
+\begin{algorithm}
+\DontPrintSemicolon % Some LaTeX compilers require you to use \dontprintsemicolon instead
+\KwIn{Uma $TD(S) \mathcal{T}$ em $\mathbb{R}^3$, e um novo ponto $p$ para inserir}
+\KwOut{$\mathcal{T}^p = \mathcal{T} \cup \{p\}$}
+$\tau \gets Walk(p)$\\
+$\text{insere p em }\tau\text{ com um flip14}$\\
+$\text{empilha os 4 tetraedros que se formaram}$\\
+\While{$\text{pilha não for vazia}$}{
+  $\tau = \{p,a,b,c\} \gets \text{desempilha um tetraedro}$\\
+  $\tau_a = \{a,b,c,d\} \gets \text{tetraedro adjacente de }\tau\text{ que contém abc como faceta}$\\
+  \uIf{$\text{d está dentro da circunsfera de }\tau$}{
+      $Flip(\tau, \tau_a)$\\
+    }
+  }
+\caption{\texttt{InsertOnePoint($\mathcal{T}, p$)}}
+\label{alg1}
+\end{algorithm}
+
+O algoritmo é uma adaptação de \cite{Joe1991}. Como em $\mathbb{R}^2$, o ponto $p$
+é primeiro inserido em $\mathcal{T}$ com um $flip$ (neste caso, $flip14$), e os 
+novos tetraedros são testados para garantir que ainda são Delaunay. A sequencia de 
+$flips$ necessários é controlado pela pilha que contém todos os tetraedros não
+testados. Toda vez que $flip$ é executado, o tetraedro gerado é empilhado. O algoritmo
+para quando todos os tetraedros incidentes a $p$ são Delaunay, o que significa que 
+a pilha está vazia.
+
+O método \texttt{Flip()} necessita de cuidado especial, ao contrário do caso para duas
+dimensões, existem diferentes tipos de $flips$ para diferentes situações. Basicamente,
+testar para cada face que não possue o ponto inserido $p$, se são localmente 
+Delaunay.  
+
+Seja $\tau = \{p,a,b,c\}$ o próximo tetraedro a ser desempilhado. Para que 
+$\tau$ seja Delaunay, é necessário apenas uma comparação com o tetraedro 
+$\tau_a = \{a,b,c,d\}$ que não possue $p$ e é incidente à face $abc$. Se o
+vértice $d$ estiver dentro da circunsfera de $\tau$. Caso esteja, realiza
+uma operação diferente dependendo do tipo de geometria que de $\tau$ e 
+$\tau_a$.
+
+Observando do ponto de vista do ponto $p$, temos três possibilidades: vemos
+uma face de $\tau_a$; vemos duas faces de $\tau_a$; ou vemos três faces de
+$\tau_a$. Joe \cite{Joe1989} não só provou que o algoritmo incremental baseado
+em $flip$ que funciona em 3 dimensões, mas também provou que funciona para
+casos degenerados. Disso temos os seguintes casos que podem ocorrer:
+
+\begin{Casos}
+    \item apenas uma face de $\tau_a$ é visível, e portanto a união de 
+    $\tau$ e $\tau_a$ é um poliedro convexo. Neste caso, executa um 
+    $flip23$.
+    \item duas faces de $\tau_a$ são visíveis, e portanto a união de 
+    $\tau$ e $\tau_a$ é não-convexo. \textbf{Se} existir um tetraedro $\tau_b = abpd$
+    em $\mathcal{T}^p$ tal que a aresta $ab$ é compartilhada por $\tau$,
+    $tau_a$ e $\tau_b$, então um $flip32$ é executado. \textbf{Caso contrário},
+    nenhum $flip$ é executado. A face $abc$ que não é Delaunay será corrigida
+    por outro $flip$ executado em um tetraedro adjacente, como \cite{Joe1991}
+    prova.
+    \item o segmento de reta $pd$ intersecta diretamente uma aresta de $abc$ 
+    (assuma que seja $ab$, por exemplo). Então, os vértices $p$, $d$, $a$ e 
+    $b$ são coplanares. Um $flip23$ criaria um tetraedro ``achatado" $abdp$,
+    é possível se, e somente se, $\tau$ e $\tau_a$ estão na $config44$ com dois
+    outros tetraedros $\tau_b$ e $\tau_c$, tal que a aresta $ab$ é incidente a
+    $\tau$, $\tau_a$, $\tau_b$ e $\tau_c$. Uma vez que os quatro tetraedros estão
+    na $config44$, um $flip44$ pode ser executado, caso contrário, nenhum $flip$
+    é executado.
+    \item o vértice $p$ está diretamente em cima de uma aresta da face $abc$ (assuma 
+    que seja a aresta $ab$). Portanto, $p$ está no mesmo plano que abc, mas também
+    está no mesmo plano que $abd$. O tetraedro $abcp$ é obviamente achatado. A única 
+    razão para tal caso é porque $p$ foi inserido diretamente em uma aresta de $\mathcal{T}$,
+    e o $flip14$ que divide o tetraedro, criou dois tetraedros achatados que contém $p$.
+    Neste caso, é suficiente executar um $flip23$ em $\tau$ e $\tau_a$. Um tetraedro 
+    achatado ainda será criado, porém será deletado com um outro $flip$.
+    \item existe um ponto exatamente no mesmo lugar que o ponto $p$ que está sendo inserido,
+    este caso é trivial, no método \texttt{Walk()}, testar se o ponto $p$ não está
+    dentro de uma tolerancia de distancia dos vértices, caso esteja, não insere $p$.
+    \item o ponto $p$ cai exatamente na superfície de uma circunsfera de $\mathcal{T}$,
+    este caso também é trivial e não necessita de nenhuma operação.
+    \item o ponto $p$ cai em uma face de um tetraedro de $\mathcal{T}$. Neste caso, 
+    não necessita de nenhuma operação, uma vez que um $flip14$ será executado e criará
+    um tetraedro achatado que será deletado mais tarde. 
+\end{Casos}
+
+\begin{algorithm}[H]
+\DontPrintSemicolon % Some LaTeX compilers require you to use \dontprintsemicolon instead
+\KwIn{Dois tetraedros adjacentes $\tau$ e $\tau_a$}
+\KwOut{um flip é executa, ou não}
+\uIf{\text{caso 1}}{
+    $flip23(\tau, \tau_a)$\\
+    $\text{empilha tetraedra $pabd$, $pbcd$ e $pacd$}$
+}
+\Else{
+    \uIf{\text{caso 2 }\textbf{and}\text{ $\mathcal{T}^p$ tem tetraedro $pdab$} }{
+        $flip32(\tau, \tau_a, pdab)$\\
+        \text{empilha $pacd$ e $pbcd$}
+    }
+    \Else{
+        \uIf{\text{caso 3 }\textbf{and}\text{ $\tau$ e $\tau_a$ estão em $config44$ com $\tau_b$ e $\tau_c$}}{
+            $flip44(\tau, \tau_a, \tau_b, \tau_c)$\\
+            \text{empilha os quatro tetraedros criados}
+        }
+        \Else{
+            \uIf{\text{caso 4}}{
+                $flip23(\tau, \tau_a)$\\
+                \text{empilha o tetraedro $pabd$, $pbcd$ e $pacd$}
+            }
+        }
+    }
+}
+\caption{\texttt{Flip($\mathcal{T}, p$)}}
+\label{alg1}
+\end{algorithm}
+
+O algoritmo \texttt{Flip()} trata de todos os casos necessários, é 
+importante observar que os casos 5, 6 e 7 não são necessitam de tratamento, uma 
+vez que nenhuma operação não é necessário. 
+
+\subsection{Extraindo o DV}
+
+Finalmente, seja $\mathcal{T}$ a $TD(S)$ em $\mathbb{R}^3$. Para extrair o DV
+de $\mathcal{T}$ pode ser computado da seguinte forma:
+\begin{itemize}
+    \item[\textbf{Vértice: }] um vértice de Voronoi é exatamente o centro da esfera
+    que passa pelos quatro vértices do tetraedro.
+    \item[\textbf{Aresta: }] uma aresta de Voronoi, que é o dual da face triangular $k$,
+    é formado pelos dois vértices de Voronoi cujo dual são as duas faces do tetraedro 
+    que compartilham $k$.
+    \item[\textbf{Face: }] a face de Voronoi, que é o dual a uma aresta de Delaunay $\alpha$,
+    é formado por todos os vértices que são duais ao tetraedro de Delaunay incidente 
+    a $\alpha$. 
+    \item[\textbf{Poliedro: }] a contrução de uma região de Voronoi $\mathcal{V}_p$ dual 
+    para um vértice $p$ consiste em identificar as arestas incidente ao vértice $p$, e 
+    então extrair a dual da face de cada aresta.
+\end{itemize}
+
+Para extrair o diagrama de Voronoi em $\mathbb{R}^3$ da tetraedralização de Delaunay
+para um conjunto $S$ de $n$ pontos no espaço, executa em $\Theta(n)$.
+
+\subsection{Complexidade de tempo}
+
+O algoritmo baseado em \texttt{InsertOnePoint()} é usado para computar a $TD(S)$
+de um conjunto $S$ de $n$ pontos no $\mathbb{R}^3$, executa em $\mathcal{O}(n^2)$ \cite{Ledoux2007},
+que é o pior caso ótimo \cite{Edelsbrunner1992}. Mas na prática, o algoritmo 
+executará mais rápido \cite{Ledoux2007}. Inclusive pode executar em $\mathcal{O}(n\log n)$,
+caso os $n$ pontos estiverem uniformemente distribuidos em um cubo unitário \cite{Edelsbrunner1992}.
+Então, a complexidade de tempo total para se computar o diagrama de Voronoi em $\mathbb{R}^3$
+é $\mathcal{O}(n^2)$.
+
+

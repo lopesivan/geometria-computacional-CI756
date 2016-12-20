@@ -1,0 +1,123 @@
+\section{Operações básicas e estrutura de dados}
+
+A computação da triangulação de Delaunay em duas e três dimensões pode
+ser calculada basicamente de três formas: dividir e conquistar, \textit{sweep line}
+e uma inserção incremental. Cada um desses paradigmas possui um algoritmo 
+ótimo em duas dimensões, ou seja, pode ser calculado em $\mathcal{O}(n\log{}n)$.
+
+Porém, em três dimensões não é tão simples, apenas algoritmos que utilizam 
+o paradigma de inserção incremental possue um pior caso ótimo $\mathcal{O}(n^2)$,
+uma vez que a complexidade da $TD$ em $\mathbb{R}^3$ é quadrático.
+
+No caso de um algoritmo de inserção incremental, os pontos são inseridos um de 
+cada vez e a tetraedralização é atualizada com relação ao critério de Delaunay.
+Para isso, existem dois algoritmos na literatura que resolvem a TD de forma 
+incremental: Bowyer-Watson \cite{Watson81}, ou um algoritmo baseado em 
+\textit{flipping}. Nesta seção, será apresentado algumas operações básicas 
+que serão necessárias para entender como que o algoritmo funciona e na 
+proxima seção o algoritmo propriamente dito.
+
+\subsection{Inicialização}
+O algoritmo que será apresentadado nesta seção assume que o conjunto de 
+pontos $S$ está inteiramente contido em um \textit{grande tetraedro} ($\tau_{big}$),
+tal que o fecho convexo de $S$ seja $\tau_{big}$ exatamente. Portanto, inicia-se 
+primeiro $\tau_{big}$ e em seguida insere-se os pontos de $S$ um a um, sem 
+se preocupar se os pontos estão fora do fecho convexo. 
+
+\subsection{Estrutura de dados}
+A estrutura de dados comum de ser utilizada trata um tetraedro como se fosse 
+um átomo, possuindo um ponteiro para os quatro vértices e um ponteiro 
+para os quatro tetraedros adjacentes, por ser eficiente espaço
+utilizado. Existem outras formas de estrutura de dados na literatura, inclusive
+é possível guardar tanto a TD e o DV ao mesmo tempo \cite{Dobkin1987}.
+
+\subsection{Predicados}
+Para construir a TD é necessário dois testes básicos geométricos,
+chamados \textit{predicados} \cite{Ledoux2007}.
+
+O primeiro deles é $Orient(a, b, c, p)$ que determina se um ponto $p$ está acima,
+abaixo ou diretamente no plano definido por três pontos $a$, $b$, e $c$;
+\begin{equation}
+    Orient(a,b,c,p) = 
+        \begin{vmatrix}
+            a_x & a_y & a_z & 1 \\
+            b_x & b_y & b_z & 1 \\
+            c_x & c_y & c_z & 1 \\
+            p_x & p_y & p_z & 1
+        \end{vmatrix}
+\label{orient}
+\end{equation}
+
+O segundo é $InSphere(a, b, c, d, p)$ que determina se o ponto $p$ está dentro, fora ou 
+diretamente na superfície da esfera definida por quatro pontos, $a$, $b$, $c$ e
+$d$. 
+\begin{equation}
+    InSphere(a, b, c, d, p) = 
+        \begin{vmatrix}
+            a_x & a_y & a_z & a_x^2 + a_y^2 + a_z^2 & 1  \\
+            b_x & b_y & b_z & b_x^2 + b_y^2 + b_z^2 & 1 \\
+            c_x & c_y & c_z & c_x^2 + c_y^2 + c_z^2 & 1 \\
+            d_x & d_y & d_z & d_x^2 + d_y^2 + d_z^2 & 1 \\
+            p_x & p_y & p_z & p_x^2 + p_y^2 + p_z^2 & 1
+        \end{vmatrix}
+\label{insphere}
+\end{equation}
+
+Ambos os testes podem ser reduzidos para a computação do determinante de uma matriz 
+\cite{Guibas1985} como mostram as equações \ref{orient} e \ref{insphere}. Portanto,
+ambos os predicados são implementados como determinantes de matrizes 3x3 e 4x4, onde
+$Orient()$ retorna um número positivo caso o $p$ esteja acima do plano definido por
+$a$, $b$ e $c$; 0 caso esteja diretamente no plano, e negativo caso esteja abaixo.
+Semelhante para $InSphere()$, positivo caso o ponto $p$ esteja dentro da esfera 
+definida por $a$, $b$, $c$ e $d$; 0 caso esteja diretamente na superficie da esfera e
+negativo caso esteja fora da esfera.
+
+\subsection{``Bistellar Flips" tridimensionais}
+
+Um \textit{Bistellar Flip} é uma operação local que modifica a configuração de alguns 
+tetraedros adjacentes \cite{Lawson1987, Edelsbrunner1992}.
+
+Para entender, considere o conjunto $S = \{a,b,c,d,e\}$ de pontos em $\mathbb{R}^3$ e seu
+fecho convexo $conv(S)$. Disso, temos duas possibilidades:
+\begin{enumerate}
+    \item todos os pontos de $S$ estão na fronteira de $conv(S)$ e, segundo Lawson \cite{Lawson1987},
+    existem duas formas de \textit{``tetraedralizar"} o poliedro, em dois ou três tetraedros. 
+    \item ou o ponto $e$ de $S$ está contido em $conv(S)$, então existe apenas uma forma de 
+    ``tetraedralizar" $S$, que seria formar quatro tetraedros incidentes em $e$.
+\end{enumerate}
+
+Baseado nessas duas configurações descritas acima, temos quatro tipos de $flips$, são eles:
+$flip23$, $flip32$, $flip14$ e $flip41$ (os números indicam a quantidade de tetraedros 
+antes e depois, respectivamente). Para o primeiro caso, temos dois $flips$ possíveis de executar
+$flip23$ que consiste em transformar dois tetraedros em três, e $flip32$ que é a operação inversa.
+Caso $S$ seja ``tetraedralizado" em dois tetraedros e a face triangular $bcd$ não for Delaunay
+localmente, então um $flip23$ gera três tetraedros cujas faces são Delaunay localmente.
+
+Um $flip14$ acontece quando um ponto de $S$ é inserido dentro de um tetraedro, então
+divide um tetraedro em quatro, e o $flip41$ é o processo inverso quando se remove o
+ponto.
+
+\subsubsection{Flips para casos especiais}
+
+Existem alguns $flips$ baseados em casos especiais que são definidos e usados
+por Shewmuck \cite{Shewchuk2003}. São eles:
+\begin{enumerate}
+    \item $flip12$ que separa um tetraedro $abcd$ em dois tetraedros quando um novo
+    ponto é inserido diretamente na aresta $\overline{ac}$, por exemplo.
+    \item $flip13$ que separa um tetraedro $abcd$ em três tetraedros quando um novo
+    ponto é inserido diretamente em uma face do tetraedro.
+    \item $flip44$ que é equivalente a um $flip23$, formando um tetraedro achatado,
+    seguido imediatamente de um $flip32$, que remove o tetraedro achatado. 
+\end{enumerate}
+
+\subsection{Localização de ponto}
+
+A última operação básica para se calcular a $TD$ é dizer em qual tetraedro um ponto
+$p$ recem inserido está dentro. Ou seja, dado uma $TD$ $\mathcal{T}$ de um conjunto
+$S$ de pontos e um ponto $p$, dizer em qual tetraedro de $\mathcal{T}$ o ponto $p$
+pertence.
+
+Para isso, o algoritmo que utiliza a estratégia ``walking" (denominado $Walk$ no algoritmo) 
+que, baseados em resultados experimentais de Mücke et al. \cite{Mucke1996} e de Devillers 
+et al. \cite{Devillers2001}, é a solução mais rápida para caminhar na TD, também é
+trivial manter $Walk$ robusto, por não ser afetado em casos especiais.

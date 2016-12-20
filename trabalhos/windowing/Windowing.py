@@ -9,7 +9,7 @@ class Point(object):
         self.segment = segment
 
     def __repr__(self):
-        return "(%s,%s) - %s" % (self.x, self.y, self.segment.id)
+        return "%s" % (self.segment.id)
 # funções para executar uma ordenação em um array de Point
 def getKeyX(point):
     return point.x
@@ -62,18 +62,19 @@ class Node(object):
         return "[%s - %s]" % (self.key, self.height)
 
 class IntNode(object):
-    def __init__(self, interval):
-        self.key = interval
+    def __init__(self, key):
+        self.key = key
+        self.tree_assoc = None
         self.segments = None
         self.left = None
         self.right = None
         self.height = 1
 
     def __repr__(self):
-        if self.segments:
-            return "%s %s - S:%s" % (self.key, self.height, self.segments)
+        if self.segments :
+            return "%s %s - %s" % (self.key, self.segments.height, self.height)
         else:
-            return "%s %s" % (self.key, self.height)
+            return "%s 0 - %s " % (self.key, self.height)
 
 class Interval(object):
     def __init__(self, x, x1, closed, semiclosed=False):
@@ -85,6 +86,7 @@ class Interval(object):
             self.right = x
         self.semiclosed = semiclosed
         self.closed = closed
+        self.points = []
 
     def __repr__(self):
         if self.semiclosed == LEFT:
@@ -96,24 +98,77 @@ class Interval(object):
         else:
             return "(%s:%s)" % (self.left, self.right)
 
+#-----------------------------------------------#
+# Ordenação de vértices pela coordenada y, baseado
+# em quicksort
+# Entrada: uma lista de vertices
+# Saida: a lista ordenada pela coordenada y
+#-----------------------------------------------#
+def quick_sort_y(v, esq, dir):
+    pivo = esq
+    for i in xrange(esq+1, dir+1):
+        j = i
+        if v[j].y < v[pivo].y:
+            aux = v[j]
+            while j > pivo:
+                v[j] = v[j-1]
+                j -= 1
+            v[j] = aux
+            pivo += 1
+    if pivo-1 >= esq:
+        quick_sort_y(v, esq, pivo-1)
+    if pivo+1 <= dir:
+        quick_sort_y(v, pivo+1, dir)
+
+#-----------------------------------------------#
+# Ordenação de vértices pela coordenada y, baseado
+# em quicksort
+# Entrada: uma lista de vertices
+# Saida: a lista ordenada pela coordenada y
+#-----------------------------------------------#
+def quick_sort_x(v, esq, dir):
+    pivo = esq
+    for i in xrange(esq+1, dir+1):
+        j = i
+        if v[j].x < v[pivo].x:
+            aux = v[j]
+            while j > pivo:
+                v[j] = v[j-1]
+                j -= 1
+            v[j] = aux
+            pivo += 1
+    if pivo-1 >= esq:
+        quick_sort_x(v, esq, pivo-1)
+    if pivo+1 <= dir:
+        quick_sort_x(v, pivo+1, dir)
+
+
 def pre_process(segments):
     endpoints = []
     for s in segments:
         endpoints.append(s.upper)
         endpoints.append(s.lower)
 
+#    sorted_endpoints_x = endpoints[:]
+#    sorted_endpoints_y = endpoints[:]
+#
+#    quick_sort_x(sorted_endpoints_x, 0, len(endpoints)-1)
+#    quick_sort_y(sorted_endpoints_y, 0, len(endpoints)-1)
     sorted_endpoints_x = sorted(endpoints, key=getKeyX)
     sorted_endpoints_y = sorted(endpoints, key=getKeyY)
-
     elem_intervals_v = interval_x(sorted_endpoints_x)
     elem_intervals_h = interval_y(sorted_endpoints_y)
 
-
+    print len(elem_intervals_h), len(elem_intervals_v)
+    #imprime_arv(blou)
+    #imprime_arv(blou.tree_assoc)
     rtree = RangeTree(sorted_endpoints_x)
+    print '------------------------------------------------------'
     stree_v = segmentTreeX(elem_intervals_v, segments)
+    print '------------------------------------------------------'
     stree_h = segmentTreeY(elem_intervals_h, segments)
-
-    return rtree, stree_v, stree_h
+    blou = segmentTreeTeste(elem_intervals_v, elem_intervals_h, segments)
+    return rtree, stree_v, stree_h, blou
 #---------------------------------------------------#
 # Função que recebe segmentos e uma janela, retornando
 # os segmentos dentro dela
@@ -147,11 +202,16 @@ def windowQuery(window, rtree, stree_v, stree_h):
 #---------------------------------------------------#
 def interval_x(P):
     response = []
+    points = []
     response.append(Interval(-float("inf"), P[0].x, False))
     i = 0
     while i < len(P)-1:
+        points.append(P[i])
         if P[i].x != P[i+1].x:
-            response.append(Interval(P[i].x, P[i].x, True))
+            closed_interval = Interval(P[i].x, P[i].x, True)
+            closed_interval.points = points
+            points = []
+            response.append(closed_interval)
             response.append(Interval(P[i].x, P[i+1].x, False))
         i += 1
     response.append(Interval(P[-1].x, P[-1].x, True))
@@ -167,11 +227,16 @@ def interval_x(P):
 #---------------------------------------------------#
 def interval_y(P):
     response = []
+    points = []
     response.append(Interval(-float("inf"), P[0].y, False))
     i = 0
     while i < len(P)-1:
+        points.append(P[i])
         if P[i].y != P[i+1].y:
-            response.append(Interval(P[i].y, P[i].y, True))
+            closed_interval = Interval(P[i].y, P[i].y, True)
+            closed_interval.points = points
+            points = []
+            response.append(closed_interval)
             response.append(Interval(P[i].y, P[i+1].y, False))
         i += 1
     response.append(Interval(P[-1].y, P[-1].y, True))
@@ -196,11 +261,19 @@ def segmentTreeY(I, segments):
     for s in segments:
         insertSegmentHorizontal(root, s)
     return root
+
+def segmentTreeTeste(Ix, Iy, segments):
+    root = teste(Ix, Iy)
+    for s in segments:
+        insertSegmentVertical(root, s)
+    for s in segments:
+        insertSegmentHorizontal(root.tree_assoc, s)
+    return root
 #---------------------------------------------------#
 # Entrada: uma lista I de intervalos elementares
 # Saida: a raiz de uma arvore de intervalos 
 #---------------------------------------------------#
-def intervalTree(I):
+def intervalTree(I, interval_points=False):
     if len(I) == 1:
         # instancia um no' 
         v = IntNode(I[0])
@@ -494,6 +567,51 @@ def intersects(s1, s2):
 # Entrada: um conjunto de pontos
 # Saída: nó raiz da árvore
 #---------------------------------------------------#
+def teste(Ix, Iy):
+    print Iy
+    T = intervalTree(Iy)
+    if len(Ix) == 1:
+        # instancia um no' 
+        v = IntNode(Ix[0])
+    else:
+        left, right = split2(Ix)
+        lefty, righty = split2(Iy)
+
+        # define se o intervalo do no' corrente e' fechado, 
+        if left[0].closed and right[-1].closed:
+            v = IntNode(Interval(left[0].left, right[-1].right, True))
+        # fechado 'a direita 
+        if not left[0].closed and right[-1].closed:
+            v = IntNode(Interval(left[0].left, right[-1].right, False, LEFT))
+        # fechado 'a esquerda,
+        if left[0].closed and not right[-1].closed:
+            v = IntNode(Interval(left[0].left, right[-1].right, False, RIGHT))
+        # ou aberto
+        if not left[0].closed and not right[-1].closed:
+            v = IntNode(Interval(left[0].left, right[-1].right, False))
+
+        l_left_y = intervalTree(lefty)
+        l_right_y = intervalTree(righty)
+        T.left = l_left_y
+        T.right = l_right_y
+
+        l_left = teste(left, lefty)
+        l_right = teste(right, righty)
+
+        v.left = l_left
+        v.right = l_right
+        v.tree_assoc = T
+        # atualiza a altura da arvore
+        v.height = max(height(v.left), height(v.right)) + 1
+    return v
+
+
+#---------------------------------------------------#
+# Monta uma Range Tree 2D baseado em pontos no plano
+#
+# Entrada: um conjunto de pontos
+# Saída: nó raiz da árvore
+#---------------------------------------------------#
 def RangeTree(P):
     T = avlTree(P)
     if len(P) == 0:
@@ -510,7 +628,7 @@ def RangeTree(P):
         left, right = split(P)
         # guarda o nó do meio, no caso, o maior da lista
         # da esquerda
-        x_mid = left.pop(getRootIndex(left))
+        x_mid = left.pop(len(left)-1)
 
         v_left = RangeTree(left)
         v_right = RangeTree(right)
@@ -553,7 +671,7 @@ def query2DRangeTree(node, x, x1, y, y1):
                 v = v.left
             else:
                 v = v.right
-        if v and v.point.segment.reported:
+        if v and not v.point.segment.reported:
             if inside(v, x, x1, y, y1):
                 response.append(v.point.segment.id)
                 v.point.segment.reported = True
@@ -575,6 +693,7 @@ def inside(node, x, x1, y, y1):
     if (x <= node.point.x and node.point.x <= x1 and
         y <= node.point.y and node.point.y <= y1):
         return True
+    return False
 #---------------------------------------------------#
 # Busca em uma Range Tree 1D baseado em uma janela
 #
@@ -763,6 +882,8 @@ def insert_y(node, point):
     if not node:
         n = Node( point.y, point )
         return n
+    if node.key == point.y:
+        return node
     else:
         if node.key < point.y:
             node.right = insert_y( node.right, point )
@@ -796,6 +917,8 @@ def insert_x(node, point):
     if not node:
         n = Node( point.x, point )
         return n
+    if node.key == point.x:
+        return node
     else:
         if node.key < point.x:
             node.right = insert_x( node.right, point )
@@ -850,6 +973,16 @@ def rot_right_left(n):
     return rot_left(n)
 
 # imprime a árvore "deitada"
+def imprime_range(node):
+    if not node:
+        return
+    imprime_arv(node.left)
+    esp = ''
+    for i in xrange(node.height):
+        esp = esp + "    "
+    print esp, node
+    imprime_arv(node.right)
+# imprime a árvore "deitada"
 def imprime_arv(node):
     if not node:
         return
@@ -858,6 +991,7 @@ def imprime_arv(node):
     for i in xrange(node.height):
         esp = esp + "    "
     print esp, node
+    print esp, node.key.points
     imprime_arv(node.right)
 
 # retorna o balanceamento do nó para a árvore AVL

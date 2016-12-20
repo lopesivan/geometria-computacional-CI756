@@ -1,0 +1,35 @@
+\section{Introdução}
+
+O diagrama de Voronoi foi primeiro descrito, ainda que implicitamente, por 
+R. Descartes \cite{descartesPP}, ao dizer que o sistema solar consiste de vórtices.
+Ele afirmou que um corpo no espaço sofria maior influencia pela estrela que estivesse
+mais próxima daquele corpo. Assim, cada estrela teria uma região convexa de influência.
+Estas regiões convexas descritas por Descartes são as chamadas regiões que formam
+o \textit{diagrama de Voronoi}. 
+
+Este conceito se provou útil em várias áreas da ciência. Cada área deu um nome
+diferente para o diagrama de Voronoi. Os matemáticos Dirichlet \cite{LejeuneDirichlet1850} 
+e Voronoi \cite{Voronoi1909} foram os primeiros a definir formalmente o conceito.
+Por isso que o diagrama é também conhecido como \textit{Dirichlet tessellation}.
+
+Voronoi foi o primeiro a considerar o \textit{dual} dessa estrutura, onde duas 
+regiões estão conectadas se possuirem uma fronteira em comum. Mais tarde, Delaunay
+\cite{Delaunay1934} conclui o mesmo definindo que duas regiões estão conectadas
+\textit{se e somente se} os pontos dessas regiões estão contidos em um círculo
+cujo interior não possui nenhum outro ponto de $S$. Por isso, o diagrama de Voronoi
+também é conhecido por ser equivalente à \textit{Triangulação de Delaunay}.
+Ou seja, dado uma triangulação de Delaunay, é possível se obter o diagrama
+de Voronoi facilmente.
+
+No contexto da geometria computacional, os diagramas de Voronoi foram introduzidos
+pela primeira vez por Hoey e Shamos \cite{ShamosHoey1975}, aprensentando um 
+limite inferior para o problema e $O(n\log n)$. Existem alguns algoritmos na literatura
+que resolvem o diagrama de Voronoi em $\mathbb{R}^2$ que possuem complexidade de $O(n\log n)$, 
+um algoritmo que se destaca é o de Fortune \cite{Fortune1986} que 
+utiliza a técnica de \textit{sweep line}. Porém, para resolver o diagrama de Voronoi em 
+$\mathbb{R}^3$ é um pouco mais complicado. 
+
+Este trabalho tem como objetivo dissertar sobre o diagrama de Voronoi em $\mathbb{R}^3$
+especificamente, será apresentado algumas definições e propriedades básicas do problema.
+Então, veremos como podemos calcular o diagrama de Voronoi a partir da Tetraedralização 
+de Delaunay usando uma técnica de inserção incremental.

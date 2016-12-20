@@ -1,0 +1,23 @@
+\section{Definições e propriedades básicas}
+
+Para a definição do diagrama de Voronoi $DV(S)$ em $\mathbb{R}^3$, temos
+\begin{definicao}
+    Seja $S$ um conjunto de $n$ pontos no espaço Euclidiano $\mathbb{R}^2$. Uma região
+    de Voronoi $V(p,S)$, é o conjunto de pontos $x \in \mathbb{R}^3$ que estão mais perto de 
+    $p$ que qualquer outro ponto em $S$. A união das regiões $V(p,S)$ para todo $p \in S$ 
+    formam o diagrama de Voronoi de $S$, denotado como $VD(S)$. Para três dimensões,
+    $V(p,S)$ é um poliedro convexo. 
+\end{definicao}
+
+\begin{definicao}
+    A triangulação de Delaunay $TD(S)$ em $\mathbb{R}^3$ consiste em separar o espaço em tetraedros tal que
+    satisfaça a condição \textit{circumesfera vazia}, i.e., não possuir nenhum outro
+    ponto dentro da esfera formada pelos vértices do tetraedro. 
+\end{definicao}
+
+O dual do diagrama de Voronoi em $\mathbb{R}^3$ é a \textit{tetraedralização de Delaunay}, 
+cada elemento do diagrama de Voronoi corresponde a exatamente um elemento da 
+tetraedralização de Delaunay. Assim, cada vértice de Delaunay corresponde à 
+uma região de Voronoi, cada aresta de Delaunay corresponde a uma face de Voronoi,
+cada face de Delaunay corresponde a uma aresta de Voronoi, e cada tetraedro de
+Delaunay corresponde a um vértice de Voronoi.

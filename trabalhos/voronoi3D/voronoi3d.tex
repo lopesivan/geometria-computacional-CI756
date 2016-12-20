@@ -1,0 +1,82 @@
+\documentclass{article}
+
+\newcommand{\senoide}{\mbox{$y = A\sin{(\omega x + \varphi)}$}}
+
+\usepackage[utf8]{inputenc}
+
+\title{Diagrama de Voronoi $\mathbb{R}^3$}
+\author{Gustavo Higuchi}
+\date{\today}
+
+\usepackage[numbers]{natbib}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{color}   %May be necessary if you want to color links
+\usepackage[portuguese, ruled, linesnumbered]{algorithm2e}
+\usepackage{float}
+\usepackage{pgfplots}
+\usepackage{enumitem}
+
+\usepgfplotslibrary{fillbetween}
+\pgfkeys{/pgfplots/Axis Style/.style={
+    width=13.5cm, height=5cm,
+    axis x line=center, 
+    axis y line=middle, 
+    samples=200,
+    ymin=-1.5, ymax=1.5,
+    xmin=0, xmax=13.0,
+    domain=0:4*pi
+}}
+
+\newtheorem{teorema}{Teorema}
+\theoremstyle{definition} 
+\newtheorem{definicao}{Definição}
+
+
+\newtheorem*{exemplo}{Exemplo}
+\newlist{Casos}{enumerate}{1}
+\setlist[Casos]{label=\textbf{\texttt{Caso }}\arabic*:}
+
+\usepackage{mathtools}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+
+% usado para linkar cada section na tabela de conteúdo com a respectiva
+% página no documento
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black,
+    linktoc=all
+}
+
+%o começo do documento
+\pgfplotsset{compat=1.13}
+\begin{document}
+% compila o título
+\maketitle
+
+% compila a tabela de conteúdos
+\tableofcontents
+\newpage
+
+\input{./src/introducao.tex}
+
+\input{./src/definicoes.tex}
+
+\input{./src/operacoes.tex}
+
+\input{./src/algoritmo.tex}
+
+\input{./src/conclusao.tex}
+
+\newpage
+\bibliography{voronoi3d}
+\bibliographystyle{ieeetr}
+\end{document}
+
